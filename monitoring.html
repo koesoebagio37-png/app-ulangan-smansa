@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="id" class="antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Monitoring - Guru Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        'deep': '#0f172a', 'surface': '#1e293b', 'primary': '#38bdf8',
+                        'accent': '#818cf8', 'success': '#34d399', 'warning': '#fbbf24', 'danger': '#f87171',
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        /* Dark Mode Background */
+        .dark body {
+            background-color: #0f172a;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(129, 140, 248, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: #f8fafc;
+        }
+        /* Light Mode Background */
+        body {
+            background-color: #f8fafc;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(129, 140, 248, 0.05) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: #1e293b;
+        }
+
+        .glass-panel {
+            transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        /* Dark Mode Glass */
+        .dark .glass-panel {
+            background: rgba(30, 41, 59, 0.70);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Light Mode Glass */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 4px 6px -1px rgba(148, 163, 184, 0.1);
+        }
+
+        .student-card {
+            transition: all 0.3s ease;
+        }
+        .student-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .dark .student-card:hover {
+            border-color: rgba(56, 189, 248, 0.3);
+        }
+        .student-card:hover {
+            border-color: rgba(56, 189, 248, 0.5);
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    </style>
+    <script>
+        // Init Theme
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- LOGIN OVERLAY -->
+    <div id="login-overlay" class="fixed inset-0 z-[100] bg-gray-100 dark:bg-deep flex items-center justify-center p-4">
+        <div class="glass-panel p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-slate-900/90">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl text-primary animate-pulse">📡</div>
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Live Monitoring</h2>
+                <p class="text-sm opacity-70">Memantau Aktivitas Ujian Real-time</p>
+            </div>
+            
+            <!-- Loading State -->
+            <div id="login-loading" class="text-center">
+                <svg class="animate-spin h-8 w-8 text-primary mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                <p class="text-primary font-bold animate-pulse">Menghubungkan ke Portal...</p>
+            </div>
+
+            <!-- Fallback Button (Jika auto login gagal) -->
+            <div id="login-fallback" class="hidden text-center space-y-4">
+                <p class="text-red-500 font-bold bg-red-100 dark:bg-red-900/30 p-3 rounded-lg">Akses ditolak. Silakan login via Portal.</p>
+                <button onclick="window.location.href='Portal Akademik.html'" class="w-full bg-primary hover:bg-sky-600 text-white font-bold py-3 rounded-lg transition-all shadow-lg">Buka Portal Akademik</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NAVBAR -->
+    <nav class="glass-panel sticky top-0 z-50 border-b dark:border-white/10 border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold shadow-md">
+                        LM
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-slate-800 dark:text-white tracking-tight">Live Monitoring</h1>
+                        <p class="text-[10px] text-slate-500 dark:text-slate-400 italic -mt-1 font-mono" id="header-user-id">Connecting...</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <select id="filter-ujian" class="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5 w-48 md:w-64 transition-colors">
+                        <option value="">-- Pilih Kode Ujian --</option>
+                    </select>
+                    
+                    <button onclick="toggleTheme()" class="p-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+                        <!-- Sun Icon -->
+                        <svg id="icon-sun" class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                        <!-- Moon Icon -->
+                        <svg id="icon-moon" class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                    </button>
+
+                    <div id="connection-status" class="hidden md:flex px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        LIVE
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- STATS BAR -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="glass-panel p-4 rounded-2xl">
+                <p class="text-slate-500 dark:text-slate-400 text-xs uppercase font-bold tracking-wider">Total Peserta</p>
+                <p id="stat-total" class="text-2xl font-bold text-slate-800 dark:text-white mt-1">0</p>
+            </div>
+            <div class="glass-panel p-4 rounded-2xl">
+                <p class="text-emerald-600 dark:text-emerald-400 text-xs uppercase font-bold tracking-wider">Selesai</p>
+                <p id="stat-finished" class="text-2xl font-bold text-slate-800 dark:text-white mt-1">0</p>
+            </div>
+            <div class="glass-panel p-4 rounded-2xl">
+                <p class="text-sky-600 dark:text-sky-400 text-xs uppercase font-bold tracking-wider">Sedang Mengerjakan</p>
+                <p id="stat-working" class="text-2xl font-bold text-slate-800 dark:text-white mt-1">0</p>
+            </div>
+            <div class="glass-panel p-4 rounded-2xl border-red-500/30 bg-red-500/5">
+                <p class="text-red-600 dark:text-red-400 text-xs uppercase font-bold tracking-wider">Terdeteksi Curang</p>
+                <p id="stat-cheat" class="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">0</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pb-10">
+        <div id="cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Cards will be injected here -->
+            <div class="col-span-full text-center py-20 text-slate-500 dark:text-slate-400">
+                <p class="text-lg">Silakan pilih Kode Ujian di atas untuk memantau.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- ACTION MODAL -->
+    <div id="action-modal" class="fixed inset-0 z-[60] bg-black/50 dark:bg-black/80 backdrop-blur-sm hidden flex-col items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-md rounded-2xl p-6 relative bg-white dark:bg-slate-900">
+            <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-4">Aksi Siswa</h3>
+            <p id="modal-student-name" class="text-slate-600 dark:text-slate-300 mb-6">Nama Siswa</p>
+            
+            <div class="space-y-3">
+                <button onclick="performAction('reset_cheat')" class="w-full p-3 bg-yellow-100 dark:bg-yellow-600/20 hover:bg-yellow-200 dark:hover:bg-yellow-600/30 text-yellow-700 dark:text-yellow-400 border border-yellow-300 dark:border-yellow-600/50 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Reset Pelanggaran (+1 Kesempatan)
+                </button>
+                <button onclick="performAction('force_finish')" class="w-full p-3 bg-emerald-100 dark:bg-emerald-600/20 hover:bg-emerald-200 dark:hover:bg-emerald-600/30 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-600/50 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    Paksa Selesai
+                </button>
+                <button onclick="performAction('suspend')" class="w-full p-3 bg-red-100 dark:bg-red-600/20 hover:bg-red-200 dark:hover:bg-red-600/30 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-600/50 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+                    Diskualifikasi (Suspend)
+                </button>
+                 <button onclick="performAction('delete')" class="w-full p-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    Hapus Sesi
+                </button>
+            </div>
+            
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-500 hover:text-slate-800 dark:hover:text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        // [FIXED] Menambahkan serverTimestamp ke dalam import
+        import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, getDocs, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAwIwimlyrE4qQqYa2gA8Pfygd59USsveQ",
+            authDomain: "aplikasi-ulangan-01.firebaseapp.com",
+            projectId: "aplikasi-ulangan-01",
+            storageBucket: "aplikasi-ulangan-01.firebasestorage.app",
+            messagingSenderId: "409085062439",
+            appId: "1:409085062439:web:280589d1a3e12e7b980d02"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let currentListener = null;
+        let selectedStudentId = null;
+        // GLOBAL VARS FOR IDENTITY
+        let currentGuruId = null;
+        let currentGuruMapel = null;
+
+        // Init & Auth Check
+        document.addEventListener('DOMContentLoaded', async () => {
+            onAuthStateChanged(auth, (user) => {
+                const overlay = document.getElementById('login-overlay');
+                const loading = document.getElementById('login-loading');
+                const fallback = document.getElementById('login-fallback');
+                const headerId = document.getElementById('header-user-id');
+
+                // 1. Cek Token LocalStorage
+                const tokenMapel = localStorage.getItem('cbt_user_mapel');
+                currentGuruId = localStorage.getItem('cbt_user_id');
+                currentGuruMapel = tokenMapel;
+
+                if(user && tokenMapel) {
+                    // Login Sukses & Sesi Ada
+                    overlay.classList.add('hidden');
+                    headerId.textContent = `${currentGuruMapel} (${currentGuruId})`;
+                    loadExamList();
+                } else if (tokenMapel) {
+                    // Belum Login tapi ada Token -> Auto Login Anonymous
+                    signInAnonymously(auth).catch(e => {
+                        console.error("Auto Login Error:", e);
+                        loading.classList.add('hidden');
+                        fallback.classList.remove('hidden');
+                    });
+                } else {
+                    // Tidak ada token -> Tampilkan tombol balik ke portal
+                    loading.classList.add('hidden');
+                    fallback.classList.remove('hidden');
+                }
+            });
+        });
+
+        // Theme Toggle Logic
+        window.toggleTheme = () => {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.theme = 'light';
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.theme = 'dark';
+            }
+        };
+
+        async function loadExamList() {
+            try {
+                let q = collection(db, 'ujian_terjadwal');
+                
+                // FILTER: Hanya tampilkan ujian buatan guru ini (kecuali Admin Pusat)
+                if (currentGuruMapel !== 'ADMIN PUSAT' && currentGuruId) {
+                    q = query(q, where('dibuatOleh', '==', currentGuruId));
+                }
+
+                const snap = await getDocs(q);
+                const select = document.getElementById('filter-ujian');
+                
+                select.innerHTML = '<option value="">-- Pilih Kode Ujian --</option>';
+                
+                if (snap.empty) {
+                    const opt = document.createElement('option');
+                    opt.disabled = true;
+                    opt.textContent = "Belum ada ujian aktif.";
+                    select.appendChild(opt);
+                    return;
+                }
+
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    // Optional: Filter status 'aktif' saja jika diinginkan
+                    const opt = document.createElement('option');
+                    opt.value = d.kodeUjian;
+                    opt.textContent = `${d.namaUjian} (${d.kodeUjian})`;
+                    select.appendChild(opt);
+                });
+            } catch (e) {
+                console.error("Gagal memuat ujian:", e);
+                alert("Gagal memuat daftar ujian: " + e.message);
+            }
+        }
+
+        document.getElementById('filter-ujian').addEventListener('change', (e) => {
+            const code = e.target.value;
+            if(code) startMonitoring(code);
+            else stopMonitoring();
+        });
+
+        function stopMonitoring() {
+            if(currentListener) currentListener();
+            document.getElementById('cards-container').innerHTML = '<div class="col-span-full text-center py-20 text-slate-500">Pilih kode ujian untuk memulai.</div>';
+            resetStats();
+        }
+
+        function startMonitoring(examCode) {
+            if(currentListener) currentListener();
+            
+            document.getElementById('cards-container').innerHTML = '<div class="col-span-full text-center py-20 text-primary animate-pulse">Menghubungkan ke data live...</div>';
+
+            const q = query(collection(db, 'hasil_ujian'), where('ujianId', '==', examCode));
+            
+            currentListener = onSnapshot(q, (snapshot) => {
+                const students = [];
+                snapshot.forEach(doc => students.push({id: doc.id, ...doc.data()}));
+                
+                // Sort: Yang curang & aktif di atas
+                students.sort((a, b) => {
+                    if (b.pelanggaran !== a.pelanggaran) return b.pelanggaran - a.pelanggaran;
+                    return b.skor - a.skor;
+                });
+
+                renderCards(students);
+                updateStats(students);
+            }, (error) => {
+                console.error("Error monitoring:", error);
+                document.getElementById('cards-container').innerHTML = `<div class="col-span-full text-center py-20 text-red-400">Error: ${error.message}</div>`;
+            });
+        }
+
+        function renderCards(students) {
+            const container = document.getElementById('cards-container');
+            container.innerHTML = '';
+
+            if (students.length === 0) {
+                container.innerHTML = '<div class="col-span-full text-center py-20 text-slate-500">Belum ada siswa yang bergabung.</div>';
+                return;
+            }
+
+            students.forEach(s => {
+                const isOnline = s.lastHeartbeat && (Date.now() - s.lastHeartbeat.toMillis() < 60000); // 1 min threshold
+                const statusColor = s.status === 'selesai' ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-400/10 border-emerald-200 dark:border-emerald-400/20' : 
+                                    (s.status === 'suspended' ? 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-400/10 border-red-200 dark:border-red-400/20' : 
+                                    'text-sky-600 dark:text-sky-400 bg-sky-100 dark:bg-sky-400/10 border-sky-200 dark:border-sky-400/20');
+                
+                const statusText = s.status === 'selesai' ? 'SELESAI' : 
+                                   (s.status === 'suspended' ? 'SUSPENDED' : 
+                                   (isOnline ? 'MENGERJAKAN' : 'OFFLINE'));
+
+                // Badge pelanggaran
+                let violationBadge = '';
+                if (s.pelanggaran > 0) {
+                    violationBadge = `
+                        <div class="px-3 py-1 rounded-lg bg-red-100 dark:bg-red-500/20 border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 text-xs font-bold flex items-center gap-1.5 animate-pulse">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            ${s.pelanggaran}x Curang
+                        </div>
+                    `;
+                } else {
+                    violationBadge = `
+                        <div class="px-3 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center gap-1.5 opacity-50">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Aman
+                        </div>
+                    `;
+                }
+
+                const card = document.createElement('div');
+                card.className = `glass-panel rounded-2xl p-5 student-card flex flex-col relative overflow-hidden group ${s.pelanggaran > 0 ? 'border-red-300 dark:border-red-500/30' : 'border-slate-200 dark:border-white/5'}`;
+                
+                // Background Indicator for cheating
+                if(s.pelanggaran > 0) {
+                    card.innerHTML += `<div class="absolute inset-0 bg-red-500/5 z-0 pointer-events-none"></div>`;
+                }
+
+                card.innerHTML += `
+                    <div class="relative z-10 flex items-start justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-500 dark:text-slate-300 border border-slate-300 dark:border-white/10 overflow-hidden">
+                                ${s.foto ? `<img src="${s.foto}" class="w-full h-full object-cover">` : s.nama.substring(0,2).toUpperCase()}
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-800 dark:text-white text-sm line-clamp-1" title="${s.nama}">${s.nama}</h3>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 font-mono">${s.nis}</p>
+                            </div>
+                        </div>
+                        <button onclick="openActionModal('${s.id}', '${s.nama}')" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg>
+                        </button>
+                    </div>
+
+                    <div class="relative z-10 grid grid-cols-2 gap-3 mb-4">
+                        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2 text-center border border-slate-100 dark:border-white/5">
+                            <p class="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold tracking-wider">Skor</p>
+                            <p class="text-xl font-bold text-slate-700 dark:text-white">${s.skor || 0}</p>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2 text-center border border-slate-100 dark:border-white/5">
+                            <p class="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold tracking-wider">Kelas</p>
+                            <p class="text-sm font-bold text-slate-600 dark:text-slate-300 mt-1">${s.kelas || '-'}</p>
+                        </div>
+                    </div>
+
+                    <div class="relative z-10 flex items-center justify-between mt-auto pt-4 border-t border-slate-100 dark:border-white/5">
+                        <div class="px-2.5 py-1 rounded border text-[10px] font-bold uppercase tracking-wide ${statusColor}">
+                            ${statusText}
+                        </div>
+                        ${violationBadge}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function updateStats(students) {
+            document.getElementById('stat-total').innerText = students.length;
+            document.getElementById('stat-finished').innerText = students.filter(s => s.status === 'selesai').length;
+            document.getElementById('stat-working').innerText = students.filter(s => s.status === 'mengerjakan').length;
+            document.getElementById('stat-cheat').innerText = students.filter(s => s.pelanggaran > 0).length;
+        }
+
+        function resetStats() {
+            document.getElementById('stat-total').innerText = '0';
+            document.getElementById('stat-finished').innerText = '0';
+            document.getElementById('stat-working').innerText = '0';
+            document.getElementById('stat-cheat').innerText = '0';
+        }
+
+        // Action Modal Logic
+        window.openActionModal = (id, name) => {
+            selectedStudentId = id;
+            document.getElementById('modal-student-name').innerText = name;
+            document.getElementById('action-modal').classList.remove('hidden');
+            document.getElementById('action-modal').classList.add('flex');
+        };
+
+        window.closeModal = () => {
+            document.getElementById('action-modal').classList.add('hidden');
+            document.getElementById('action-modal').classList.remove('flex');
+            selectedStudentId = null;
+        };
+
+        window.performAction = async (action) => {
+            if(!selectedStudentId) return;
+            const ref = doc(db, 'hasil_ujian', selectedStudentId);
+
+            try {
+                if(action === 'reset_cheat') {
+                    if(confirm("Yakin reset pelanggaran siswa ini?")) {
+                        await updateDoc(ref, { pelanggaran: 0 }); // Reset ke 0
+                        // Opsional: Jika ingin memberi "1 nyawa" lagi tapi tetap mencatat sejarah, logika backend harus diubah.
+                        // Di sini kita reset counter agar siswa bisa lanjut ujian jika kena limit.
+                        alert("Pelanggaran direset. Siswa bisa masuk kembali.");
+                    }
+                } else if(action === 'force_finish') {
+                    if(confirm("Paksa selesaikan ujian siswa ini?")) {
+                        // [FIXED] Menggunakan serverTimestamp dengan benar
+                        await updateDoc(ref, { status: 'selesai', selesaiPada: serverTimestamp() });
+                    }
+                } else if(action === 'suspend') {
+                    if(confirm("Diskualifikasi siswa ini?")) {
+                        await updateDoc(ref, { status: 'suspended' });
+                    }
+                } else if(action === 'delete') {
+                    if(confirm("HAPUS DATA PERMANEN? Siswa harus mulai dari awal.")) {
+                        await deleteDoc(ref);
+                    }
+                }
+                closeModal();
+            } catch(e) {
+                alert("Gagal: " + e.message);
+            }
+        };
+    </script>
+</body>
+</html>

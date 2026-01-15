@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisis Akademik (Secure) - Comfort & Glow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js untuk Grafik Modern -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { 'cyber': { 900: '#0f172a', 800: '#1e293b', 700: '#334155' } }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-panel { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(8px); }
+        .dark .glass-panel { background: rgba(30, 41, 59, 0.8); }
+        @media print {
+            .no-print { display: none; }
+            .print-break { page-break-before: always; }
+            body { background: white; color: black; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 dark:bg-cyber-900 dark:text-white min-h-screen flex flex-col transition-colors duration-300">
+
+    <!-- LOGIN OVERLAY (AUTO LOGIN PORTAL) -->
+    <div id="login-overlay" class="fixed inset-0 z-[100] bg-gray-100 dark:bg-cyber-900 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-cyber-800 p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200 dark:border-emerald-900 text-center">
+            <div class="w-16 h-16 bg-purple-100 dark:bg-purple-900/50 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl animate-bounce">📊</div>
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">Analisis Akademik</h2>
+            
+            <div id="login-loading">
+                <p class="text-purple-600 dark:text-purple-400 font-bold animate-pulse">Menghubungkan ke Portal Sekolah...</p>
+            </div>
+
+            <div id="login-fallback" class="hidden mt-4 space-y-4">
+                <p class="text-red-500 font-bold text-sm bg-red-50 dark:bg-red-900/20 p-2 rounded">Akses Ditolak: Tidak ada sesi aktif.</p>
+                <button onclick="window.location.href='Portal Akademik.html'" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg transition-all shadow-lg">Buka Portal Akademik</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="sticky top-0 z-40 bg-white/90 dark:bg-cyber-800/90 backdrop-blur shadow-sm border-b border-gray-200 dark:border-gray-700 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-purple-600 rounded-lg shadow-lg">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold tracking-tight">Analisis <span class="text-purple-600 dark:text-purple-400">Akademik</span></h1>
+                        <p class="text-[12px] text-gray-500 dark:text-gray-400 italic" id="header-user-id">Connecting...</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button onclick="window.print()" class="flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2z"></path></svg>
+                        Cetak Laporan
+                    </button>
+                    <button id="logout-btn" class="bg-red-100 text-red-600 px-3 py-2 rounded-lg text-sm font-bold hover:bg-red-200 transition-colors hidden">Tutup</button>
+                    <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                        <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- Filter Section -->
+        <div class="bg-white dark:bg-cyber-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 no-print">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pilih Paket Ujian</label>
+                    <select id="exam-select" class="w-full p-3 bg-gray-50 dark:bg-cyber-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-purple-500 focus:border-purple-500 dark:text-white transition-colors">
+                        <option value="">-- Pilih Ujian untuk Dianalisis --</option>
+                    </select>
+                </div>
+                <button id="btn-analyze" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-purple-500/30 flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                    Proses Analisis
+                </button>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="text-center py-20 text-gray-400 dark:text-gray-500">
+            <svg class="w-24 h-24 mx-auto mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+            <h3 class="text-xl font-bold">Belum ada data yang dianalisis</h3>
+            <p>Pilih ujian di atas untuk melihat statistik komprehensif.</p>
+        </div>
+
+        <!-- Analysis Content (Hidden by default) -->
+        <div id="analysis-content" class="space-y-8 hidden">
+            
+            <!-- Header Report -->
+            <div class="border-b-2 border-purple-500 pb-4">
+                <h2 id="report-title" class="text-3xl font-bold text-gray-800 dark:text-white">Laporan Analisis Hasil Ujian</h2>
+                <div class="flex gap-6 mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    <span id="report-date">📅 Tanggal: -</span>
+                    <span id="report-class">🏫 Kelas: -</span>
+                    <span id="report-teacher">👨‍🏫 Guru: -</span>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-white dark:bg-cyber-800 p-6 rounded-2xl shadow-sm border-l-4 border-blue-500">
+                    <p class="text-xs text-gray-500 uppercase font-bold">Rata-rata Nilai</p>
+                    <h3 id="stat-avg" class="text-3xl font-bold text-blue-600 dark:text-blue-400">-</h3>
+                </div>
+                <div class="bg-white dark:bg-cyber-800 p-6 rounded-2xl shadow-sm border-l-4 border-green-500">
+                    <p class="text-xs text-gray-500 uppercase font-bold">Nilai Tertinggi</p>
+                    <h3 id="stat-max" class="text-3xl font-bold text-green-600 dark:text-green-400">-</h3>
+                </div>
+                <div class="bg-white dark:bg-cyber-800 p-6 rounded-2xl shadow-sm border-l-4 border-red-500">
+                    <p class="text-xs text-gray-500 uppercase font-bold">Nilai Terendah</p>
+                    <h3 id="stat-min" class="text-3xl font-bold text-red-600 dark:text-red-400">-</h3>
+                </div>
+                <div class="bg-white dark:bg-cyber-800 p-6 rounded-2xl shadow-sm border-l-4 border-purple-500">
+                    <p class="text-xs text-gray-500 uppercase font-bold">Standar Deviasi</p>
+                    <h3 id="stat-std" class="text-3xl font-bold text-purple-600 dark:text-purple-400">-</h3>
+                </div>
+            </div>
+
+            <!-- Charts Row 1 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Score Distribution -->
+                <div class="bg-white dark:bg-cyber-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+                        Distribusi Nilai (Histogram)
+                    </h3>
+                    <div class="h-64 w-full">
+                        <canvas id="chart-distribution"></canvas>
+                    </div>
+                    <p class="text-xs text-center mt-2 text-gray-400">Sebaran nilai siswa berdasarkan interval kelas.</p>
+                </div>
+
+                <!-- Difficulty Composition -->
+                <div class="bg-white dark:bg-cyber-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
+                        Komposisi Tingkat Kesukaran Soal
+                    </h3>
+                    <div class="h-64 w-full flex justify-center">
+                        <canvas id="chart-difficulty"></canvas>
+                    </div>
+                    <p class="text-xs text-center mt-2 text-gray-400">Berdasarkan data jawaban benar/salah siswa.</p>
+                </div>
+            </div>
+
+            <!-- Top Students (Ranking) -->
+            <div class="bg-white dark:bg-cyber-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-bold mb-4">Peringkat 5 Besar</h3>
+                <div class="h-64 w-full">
+                    <canvas id="chart-ranking"></canvas>
+                </div>
+            </div>
+
+            <div class="print-break"></div>
+
+            <!-- Item Analysis Table -->
+            <div class="bg-white dark:bg-cyber-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div class="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-cyber-900/50 flex justify-between items-center">
+                    <h3 class="text-lg font-bold">Analisis Butir Soal</h3>
+                    <button onclick="alert('Download CSV logic here')" class="text-sm text-purple-600 font-bold hover:underline">Download CSV</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-100 dark:bg-cyber-900 text-gray-600 dark:text-gray-400 uppercase text-xs font-bold">
+                            <tr>
+                                <th class="px-6 py-3">No. Soal</th>
+                                <th class="px-6 py-3">Benar</th>
+                                <th class="px-6 py-3">Salah</th>
+                                <th class="px-6 py-3">Tingkat Kesukaran (P)</th>
+                                <th class="px-6 py-3 text-right">Kategori</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-soal-body" class="divide-y divide-gray-200 dark:divide-gray-700">
+                            <!-- JS Injected -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Student Analysis & Mastery Table (NEW) -->
+            <div class="bg-white dark:bg-cyber-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div class="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-cyber-900/50 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-white">Analisis Hasil Siswa & Ketuntasan</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">KKM: <span class="font-bold text-gray-700 dark:text-gray-300">75</span></p>
+                    </div>
+                    <!-- Mastery Stats -->
+                    <div class="flex gap-4">
+                        <div class="flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800">
+                            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                            <span class="text-xs font-bold text-green-700 dark:text-green-400">Tuntas: <span id="count-tuntas">0</span></span>
+                        </div>
+                        <div class="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-800">
+                            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                            <span class="text-xs font-bold text-red-700 dark:text-red-400">Remedial: <span id="count-remedial">0</span></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto max-h-96">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-100 dark:bg-cyber-900 text-gray-600 dark:text-gray-400 uppercase text-xs font-bold sticky top-0">
+                            <tr>
+                                <th class="px-6 py-3">Peringkat</th>
+                                <th class="px-6 py-3">Nama Siswa</th>
+                                <th class="px-6 py-3">Kelas</th>
+                                <th class="px-6 py-3 text-center">Status</th>
+                                <th class="px-6 py-3 text-right">Nilai Akhir</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-siswa-body" class="divide-y divide-gray-200 dark:divide-gray-700">
+                            <!-- JS Injected -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Logic Script -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAwIwimlyrE4qQqYa2gA8Pfygd59USsveQ", 
+            authDomain: "aplikasi-ulangan-01.firebaseapp.com",
+            projectId: "aplikasi-ulangan-01",
+            storageBucket: "aplikasi-ulangan-01.firebasestorage.app",
+            messagingSenderId: "409085062439",
+            appId: "1:409085062439:web:280589d1a3e12e7b980d02",
+        };
+
+        let db, auth;
+        let distChart = null;
+        let diffChart = null;
+        let rankChart = null;
+        const KKM = 75;
+        
+        // GLOBAL VARIABLES UNTUK USER ID (KABEL UTAMA)
+        let currentGuruId = null;
+        let currentGuruMapel = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+
+            // --- INJEKSI START: LOGIKA AUTO LOGIN (LocalStorage dari Dashboard) ---
+            onAuthStateChanged(auth, (user) => {
+                const overlay = document.getElementById('login-overlay');
+                const logoutBtn = document.getElementById('logout-btn');
+                const loadingDiv = document.getElementById('login-loading');
+                const fallbackDiv = document.getElementById('login-fallback');
+                const headerUserId = document.getElementById('header-user-id');
+                
+                // 1. Cek Token Mapel dari LocalStorage (diset oleh Dashboard)
+                const tokenMapel = localStorage.getItem('cbt_user_mapel');
+                currentGuruId = localStorage.getItem('cbt_user_id');
+                currentGuruMapel = tokenMapel;
+
+                // 2. Cek apakah user sudah login di Firebase (Email/Pass atau Anonymous)
+                const isLoggedIn = user !== null;
+                
+                // 3. LOGIKA UTAMA
+                if (isLoggedIn) {
+                    // === USER SUDAH AUTH ===
+                    
+                    // Buka Akses
+                    overlay.classList.add('hidden');
+                    logoutBtn.classList.remove('hidden');
+                    if(headerUserId) headerUserId.textContent = `${currentGuruMapel} (${currentGuruId})`;
+                    
+                    loadExams(); // Load exams
+
+                } else if (tokenMapel) {
+                    // === USER BELUM AUTH, TAPI ADA TOKEN DARI DASHBOARD ===
+                    // Login Anonymous agar bisa akses Firestore
+                    signInAnonymously(auth).catch(e => {
+                        console.error("Auto-login gagal:", e);
+                        loadingDiv.classList.add('hidden');
+                        fallbackDiv.classList.remove('hidden');
+                    });
+                } else {
+                    // === TIDAK ADA TOKEN & TIDAK LOGIN ===
+                    // Tampilkan Fallback
+                    loadingDiv.classList.add('hidden');
+                    fallbackDiv.classList.remove('hidden');
+                    logoutBtn.classList.add('hidden');
+                }
+            });
+            // --- INJEKSI END ---
+
+            document.getElementById('logout-btn').addEventListener('click', () => {
+                if(confirm("Tutup aplikasi Analisis?")) {
+                    window.close();
+                    setTimeout(() => { window.location.href = 'Portal Akademik.html'; }, 500);
+                }
+            });
+
+            // Theme Toggle
+            const btnTheme = document.getElementById('theme-toggle');
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+            btnTheme.addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+                localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+            });
+
+            // Analyze Button Logic
+            document.getElementById('btn-analyze').addEventListener('click', () => {
+                const examId = document.getElementById('exam-select').value;
+                if(!examId) {
+                    alert("Pilih ujian terlebih dahulu!");
+                    return;
+                }
+                generateAnalysis(examId);
+            });
+        });
+
+        async function loadExams() {
+            const select = document.getElementById('exam-select');
+            
+            // FILTER LOGIC: Tampilkan ujian berdasarkan ID Pembuat (jika bukan Admin Pusat)
+            let q = collection(db, 'ujian_terjadwal');
+            
+            if (currentGuruMapel !== 'ADMIN PUSAT' && currentGuruId) {
+                 q = query(q, where('dibuatOleh', '==', currentGuruId));
+            }
+            
+            const snap = await getDocs(q);
+            
+            select.innerHTML = '<option value="">-- Pilih Ujian untuk Dianalisis --</option>';
+            if(snap.empty) {
+                 select.innerHTML = '<option value="">Tidak ada ujian tersedia.</option>';
+                 return;
+            }
+
+            snap.forEach(doc => {
+                const d = doc.data();
+                select.innerHTML += `<option value="${d.kodeUjian}">${d.namaUjian} (${d.kodeUjian})</option>`;
+            });
+        }
+
+        async function generateAnalysis(examCode) {
+            const btn = document.getElementById('btn-analyze');
+            btn.textContent = "Menganalisis..."; btn.disabled = true;
+
+            try {
+                // 1. Fetch Exam Data
+                const examQ = query(collection(db, 'ujian_terjadwal'), where('kodeUjian', '==', examCode));
+                const examSnap = await getDocs(examQ);
+                if(examSnap.empty) throw new Error("Data ujian tidak ditemukan");
+                const examData = examSnap.docs[0].data();
+
+                // Validation for questions list
+                if (!examData.daftarIdSoal || !Array.isArray(examData.daftarIdSoal) || examData.daftarIdSoal.length === 0) {
+                     throw new Error("Daftar soal ujian ini kosong atau rusak.");
+                }
+
+                // 2. Fetch Questions (Parallel) - Need Keys!
+                const qPromises = examData.daftarIdSoal.map(id => getDoc(doc(db, 'bank_soal_privat', id)));
+                const qPublicPromises = examData.daftarIdSoal.map(id => getDoc(doc(db, 'bank_soal', id)));
+                
+                const [keysSnaps, publicSnaps] = await Promise.all([
+                    Promise.all(qPromises),
+                    Promise.all(qPublicPromises)
+                ]);
+
+                // 3. Fetch Student Results
+                const resQ = query(collection(db, 'hasil_ujian'), where('ujianId', '==', examCode));
+                const resSnap = await getDocs(resQ);
+                
+                const students = [];
+                resSnap.forEach(d => students.push(d.data()));
+
+                if(students.length === 0) {
+                    alert("Belum ada siswa yang mengerjakan ujian ini.");
+                    return;
+                }
+
+                // --- CALCULATION LOGIC ---
+                const scores = students.map(s => parseFloat(s.skor) || 0);
+                
+                // Stats
+                const avg = scores.reduce((a,b) => a+b, 0) / scores.length;
+                const max = Math.max(...scores);
+                const min = Math.min(...scores);
+                const mean = avg;
+                const sqDiffs = scores.map(v => (v - mean) ** 2);
+                const avgSqDiff = sqDiffs.reduce((a,b) => a+b, 0) / sqDiffs.length;
+                const stdDev = Math.sqrt(avgSqDiff);
+
+                // Update UI
+                document.getElementById('empty-state').classList.add('hidden');
+                document.getElementById('analysis-content').classList.remove('hidden');
+                
+                document.getElementById('report-title').textContent = "Laporan: " + examData.namaUjian;
+                document.getElementById('report-date').textContent = "📅 " + new Date().toLocaleDateString('id-ID');
+                
+                document.getElementById('stat-avg').textContent = avg.toFixed(1);
+                document.getElementById('stat-max').textContent = max;
+                document.getElementById('stat-min').textContent = min;
+                document.getElementById('stat-std').textContent = stdDev.toFixed(2);
+
+                // Render Charts
+                renderDistributionChart(scores);
+                renderRankingChart(students);
+
+                // ITEM ANALYSIS (Complex part)
+                const itemDetails = [];
+                let easy=0, medium=0, hard=0;
+
+                // Loop questions
+                examData.daftarIdSoal.forEach((qid, idx) => {
+                    const keyData = keysSnaps[idx].exists() ? keysSnaps[idx].data() : null;
+                    const publicData = publicSnaps[idx].exists() ? publicSnaps[idx].data() : { type: 'unknown' };
+                    
+                    let correctCount = 0;
+                    
+                    if (keyData) {
+                        students.forEach(s => {
+                            // FIXED: Added safe check for jawabanSiswa existence and array bounds
+                            const ans = (s.jawabanSiswa && s.jawabanSiswa[idx]) ? s.jawabanSiswa[idx].val : null;
+                            
+                            // Basic check logic (simplified for analysis)
+                            if (publicData.type === 'pg' && ans == keyData.kunci) correctCount++;
+                            // For other types, skip detailed calculation for now or assume partial
+                        });
+                    }
+                    
+                    if (publicData.type === 'pg' && keyData) {
+                        const difficulty = correctCount / students.length;
+                        let cat = "Sukar"; let color = "text-red-600";
+                        if(difficulty > 0.7) { cat = "Mudah"; color = "text-green-600"; easy++; }
+                        else if(difficulty >= 0.3) { cat = "Sedang"; color = "text-yellow-600"; medium++; }
+                        else { hard++; }
+
+                        itemDetails.push({
+                            no: idx+1, correct: correctCount, wrong: students.length - correctCount,
+                            p: difficulty.toFixed(2), cat: cat, color: color
+                        });
+                    }
+                });
+
+                renderDifficultyChart([easy, medium, hard]);
+                renderItemAnalysisTable(itemDetails);
+                renderStudentTable(students);
+
+            } catch(e) {
+                alert("Error Analisis: " + e.message);
+                console.error(e);
+            } finally {
+                btn.textContent = "Proses Analisis"; btn.disabled = false;
+            }
+        }
+
+        // --- CHART FUNCTIONS ---
+
+        function renderDistributionChart(scores) {
+            const ctx = document.getElementById('chart-distribution').getContext('2d');
+            const bins = [0, 0, 0, 0, 0];
+            scores.forEach(s => {
+                if(s <= 20) bins[0]++; else if(s <= 40) bins[1]++; else if(s <= 60) bins[2]++; else if(s <= 80) bins[3]++; else bins[4]++;
+            });
+
+            if(distChart) distChart.destroy();
+            distChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['0-20', '21-40', '41-60', '61-80', '81-100'],
+                    datasets: [{ label: 'Jumlah Siswa', data: bins, backgroundColor: ['#ef4444', '#f97316', '#eab308', '#3b82f6', '#22c55e'] }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function renderDifficultyChart(counts) {
+            const ctx = document.getElementById('chart-difficulty').getContext('2d');
+            if(diffChart) diffChart.destroy();
+            diffChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Mudah', 'Sedang', 'Sukar'],
+                    datasets: [{ data: counts, backgroundColor: ['#22c55e', '#eab308', '#ef4444'] }]
+                }
+            });
+        }
+
+        function renderRankingChart(students) {
+            const ctx = document.getElementById('chart-ranking').getContext('2d');
+            const sorted = [...students].sort((a,b) => b.skor - a.skor).slice(0, 5);
+            if(rankChart) rankChart.destroy();
+            rankChart = new Chart(ctx, {
+                type: 'bar', indexAxis: 'y',
+                data: {
+                    labels: sorted.map(s => s.nama),
+                    datasets: [{ label: 'Nilai', data: sorted.map(s => s.skor), backgroundColor: '#8b5cf6' }]
+                },
+                options: { responsive: true, scales: { x: { max: 100 } } }
+            });
+        }
+
+        function renderItemAnalysisTable(data) {
+            const tbody = document.getElementById('table-soal-body');
+            tbody.innerHTML = '';
+            if(data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-400">Analisis per butir hanya tersedia untuk soal Pilihan Ganda saat ini.</td></tr>';
+                return;
+            }
+            data.forEach(d => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50 border-b dark:border-gray-800 dark:hover:bg-gray-700">
+                        <td class="px-6 py-3 font-mono font-bold">${d.no}</td>
+                        <td class="px-6 py-3 text-green-600 font-bold">${d.correct}</td>
+                        <td class="px-6 py-3 text-red-500 font-bold">${d.wrong}</td>
+                        <td class="px-6 py-3 font-bold">${d.p}</td>
+                        <td class="px-6 py-3 text-right font-bold ${d.color}">${d.cat}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderStudentTable(students) {
+            const tbody = document.getElementById('table-siswa-body');
+            tbody.innerHTML = '';
+            let tuntas=0, remedial=0;
+            
+            const sorted = [...students].sort((a,b) => b.skor - a.skor);
+            sorted.forEach((s, idx) => {
+                const isTuntas = s.skor >= KKM;
+                if(isTuntas) tuntas++; else remedial++;
+                const status = isTuntas 
+                    ? `<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded font-bold">Tuntas</span>` 
+                    : `<span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded font-bold">Remedial</span>`;
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50 border-b dark:border-gray-800 dark:hover:bg-gray-700">
+                        <td class="px-6 py-3 font-bold">${idx+1}</td>
+                        <td class="px-6 py-3">${s.nama}</td>
+                        <td class="px-6 py-3 text-gray-500">${s.kelas}</td>
+                        <td class="px-6 py-3 text-center">${status}</td>
+                        <td class="px-6 py-3 text-right font-bold text-lg text-indigo-600">${s.skor}</td>
+                    </tr>
+                `;
+            });
+            document.getElementById('count-tuntas').textContent = tuntas;
+            document.getElementById('count-remedial').textContent = remedial;
+        }
+
+    </script>
+</body>
+</html>
