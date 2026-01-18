@@ -1745,23 +1745,60 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+// --- PERBAIKAN: FUNGSI CLEAR EDITOR YANG AMAN UNTUK SESI GURU ---
             function clearEditor() {
+                // 1. Reset Area Editor Utama
                 questionType.value = 'pg'; 
                 editorVisual.innerHTML = ''; 
-				editorBottom.innerHTML = ''; // TAMBAHAN BARU
+                editorBottom.innerHTML = ''; 
                 
-				metaMapel.value = ''; // TAMBAHAN
-                metaKelas.value = ''; metaKesulitan.value = 'C1'; metaBabInput.value = ''; metaSubbabInput.value = ''; 
-				document.getElementById('meta-group-id').value = ''; // KODE BARU: BERSIHKAN GROUP ID
+                // 2. LOGIKA PENANGANAN MAPEL (THE FIX)
+                const currentToken = localStorage.getItem('cbt_user_mapel');
+                const metaMapelInput = document.getElementById('meta-mapel');
+
+                if (currentToken && currentToken !== "ADMIN PUSAT") {
+                    // Jika Guru Mapel: Kunci kembali nilai ke mapel login
+                    if(metaMapelInput) {
+                        metaMapelInput.value = currentToken;
+                        // PENTING: Trigger event input agar Peta Kurikulum (BAB/SubBAB) dimuat ulang
+                        setTimeout(() => {
+                            metaMapelInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            metaMapelInput.dispatchEvent(new Event('change', { bubbles: true }));
+                        }, 50);
+                    }
+                } else {
+                    // Jika Admin Pusat: Bersihkan total
+                    if(metaMapelInput) metaMapelInput.value = '';
+                }
+
+                // 3. Reset Metadata Lainnya (Kelas, Bab, dll)
+                metaKelas.value = ''; 
+                metaKesulitan.value = 'C1'; 
+                metaBabInput.value = ''; 
+                metaSubbabInput.value = ''; 
+                document.getElementById('meta-group-id').value = ''; 
                 
-				pgList.innerHTML = ''; pgkList.innerHTML = ''; bsList.innerHTML = ''; kunciJawabanSingkat.value = '';
-                pembahasanToggle.checked = false; pembahasanContainer.style.display = 'none'; pembahasanEditor.value = '';
-                clearImageInput('naskah'); clearImageInput('pembahasan');
+                // 4. Reset Opsi & Komponen Lain
+                pgList.innerHTML = ''; 
+                pgkList.innerHTML = ''; 
+                bsList.innerHTML = ''; 
+                kunciJawabanSingkat.value = '';
+                
+                pembahasanToggle.checked = false; 
+                pembahasanContainer.style.display = 'none'; 
+                pembahasanEditor.value = '';
+                
+                clearImageInput('naskah'); 
+                clearImageInput('pembahasan');
+                
+                // 5. Buat Ulang Opsi Default
                 for (let i = 0; i < 5; i++) createPgOption(false);
                 for (let i = 0; i < 3; i++) createPgkOption();
                 for (let i = 0; i < 2; i++) createBsStatement();
+                
                 handleTypeChange();
                 
+                // 6. Reset Mode Edit & Tombol Simpan
                 currentEditingSoalId = null; 
                 editModeIdInput.value = '';
                 saveBankSoalBtn.innerHTML = `
@@ -1772,14 +1809,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveBankSoalBtn.classList.remove('from-yellow-500', 'to-orange-500');
                 saveBankSoalBtn.classList.add('from-indigo-500', 'to-purple-500');
                 
-                // Update tombol batal
                 clearEditorBtn.textContent = "Bersihkan";
                 clearEditorBtn.classList.remove('bg-rose-100', 'text-rose-600');
                 clearEditorBtn.classList.add('bg-gray-200', 'text-gray-700');
                 
                 updateLivePreview();
             }
-
             async function populateEditor(soal) {
                 clearEditor(); 
                 currentEditingSoalId = soal.firebaseId; editModeIdInput.value = soal.firebaseId;
