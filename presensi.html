@@ -512,34 +512,40 @@
             const select = document.getElementById('class-selector');
             select.innerHTML = '<option value="">Pilih Kelas</option>';
             
-            // Priority: Load Guru's Classes First
-            if (guruKelasList.length > 0) {
-                const grp = document.createElement('optgroup');
-                grp.label = "Kelas Ampuan Saya";
-                guruKelasList.forEach(c => {
-                    const opt = document.createElement('option');
-                    opt.value = c; opt.textContent = c;
-                    grp.appendChild(opt);
-                });
-                select.appendChild(grp);
-            }
+            // Cek apakah Admin Pusat
+            const isAdmin = (currentGuruMapel === 'ADMIN PUSAT');
 
-            // Load All Classes (Fallback)
-            const q = query(collection(db, 'siswa'));
-            const snap = await getDocs(q);
-            const classes = new Set();
-            snap.forEach(d => { if(d.data().kelas) classes.add(d.data().kelas); });
-            
-            const grpAll = document.createElement('optgroup');
-            grpAll.label = "Semua Kelas";
-            Array.from(classes).sort().forEach(c => {
-                if (!guruKelasList.includes(c)) {
+            if (isAdmin) {
+                // Jika Admin, muat SEMUA kelas dari database siswa
+                const q = query(collection(db, 'siswa'));
+                const snap = await getDocs(q);
+                const classes = new Set();
+                snap.forEach(d => { if(d.data().kelas) classes.add(d.data().kelas); });
+                
+                const sortedClasses = Array.from(classes).sort();
+                sortedClasses.forEach(c => {
                     const opt = document.createElement('option');
                     opt.value = c; opt.textContent = c;
-                    grpAll.appendChild(opt);
+                    select.appendChild(opt);
+                });
+            } else {
+                // Jika Guru Biasa, muat HANYA kelas ampuan dari localStorage
+                if (guruKelasList.length > 0) {
+                    guruKelasList.forEach(c => {
+                        // Filter jika ada kelas 'SEMUA' (kasus khusus admin yang tersimpan sbg array)
+                        if (c !== 'SEMUA') {
+                            const opt = document.createElement('option');
+                            opt.value = c; opt.textContent = c;
+                            select.appendChild(opt);
+                        }
+                    });
+                } else {
+                     const opt = document.createElement('option');
+                     opt.disabled = true;
+                     opt.textContent = "Anda belum memiliki kelas ampuan.";
+                     select.appendChild(opt);
                 }
-            });
-            select.appendChild(grpAll);
+            }
         }
 
         async function initAttendanceSession() {
