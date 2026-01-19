@@ -455,23 +455,68 @@
 
         async function loadStudents() {
             const tbody = document.getElementById('student-table-body');
+            const totalBadge = document.getElementById('total-badge');
+            const classSelect = document.getElementById('class-filter');
+
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4">Memuat data siswa...</td></tr>';
+            
             try {
-                // Query semua siswa (Tidak difilter mapel, sesuai request)
+                // 1. Ambil Data Guru & Kelas Ampuan dari LocalStorage
+                const userMapel = localStorage.getItem('cbt_user_mapel');
+                let guruClasses = [];
+                try {
+                    // Parse array kelas (contoh: ["X-1", "XI-2"])
+                    guruClasses = JSON.parse(localStorage.getItem('cbt_user_kelas') || '[]');
+                } catch (e) { 
+                    console.error("Gagal parsing kelas guru", e); 
+                    guruClasses = [];
+                }
+
+                const isAdmin = (userMapel === 'ADMIN PUSAT');
+
+                // 2. Query Database (Ambil Semua Siswa Dulu)
                 const q = query(collection(db, 'siswa'));
                 const snap = await getDocs(q);
+                
                 studentsData = [];
-                const classSet = new Set();
+                const classSet = new Set(); // Untuk menampung daftar kelas unik yang ditemukan
+
                 snap.forEach(doc => {
                     const d = doc.data();
-                    studentsData.push({ id: doc.id, ...d });
-                    if(d.kelas) classSet.add(d.kelas);
+                    const sKelas = d.kelas; // Kelas siswa ini
+
+                    // 3. LOGIKA FILTERING UTAMA
+                    // Masukkan siswa ke list JIKA:
+                    // a. User adalah ADMIN PUSAT (Bisa lihat semua)
+                    // b. ATAU Kelas siswa ini ada di dalam daftar 'guruClasses'
+                    if (isAdmin || (sKelas && guruClasses.includes(sKelas))) {
+                        studentsData.push({ id: doc.id, ...d });
+                        if(sKelas) classSet.add(sKelas);
+                    }
                 });
-                const classSelect = document.getElementById('class-filter');
-                classSelect.innerHTML = '<option value="all">Semua Kelas</option>';
-                Array.from(classSet).sort().forEach(c => classSelect.add(new Option(c, c)));
-                document.getElementById('total-badge').textContent = `${studentsData.length} Siswa`;
-                renderTable();
-            } catch (e) { tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-red-500">Gagal memuat: ${e.message}</td></tr>`; }
+
+                // 4. Update Dropdown Filter Kelas
+                classSelect.innerHTML = '<option value="all">Semua Kelas Saya</option>';
+                
+                // Konversi Set ke Array dan urutkan
+                const sortedClasses = Array.from(classSet).sort();
+                sortedClasses.forEach(c => {
+                    classSelect.add(new Option(c, c));
+                });
+
+                // 5. Update UI Total & Render Tabel
+                totalBadge.textContent = `${studentsData.length} Siswa`;
+                
+                if (studentsData.length === 0) {
+                     tbody.innerHTML = '<tr><td colspan="4" class="text-center py-10 text-gray-400">Tidak ada siswa di kelas ampuan Anda.</td></tr>';
+                } else {
+                     renderTable();
+                }
+
+            } catch (e) { 
+                console.error(e);
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-red-500">Gagal memuat: ${e.message}</td></tr>`; 
+            }
         }
 
         function renderTable() {
