@@ -64,7 +64,7 @@
                 </div>
                 <div class="flex items-center gap-4">
                     <button onclick="window.print()" class="flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2z"></path></svg>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                         Cetak Laporan
                     </button>
                     <button id="logout-btn" class="bg-red-100 text-red-600 px-3 py-2 rounded-lg text-sm font-bold hover:bg-red-200 transition-colors hidden">Tutup</button>
@@ -81,7 +81,15 @@
 
         <!-- Filter Section -->
         <div class="bg-white dark:bg-cyber-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 no-print">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <!-- Tambahan Filter Kelas -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filter Kelas</label>
+                    <select id="class-filter" class="w-full p-3 bg-gray-50 dark:bg-cyber-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-purple-500 focus:border-purple-500 dark:text-white transition-colors">
+                        <option value="">Semua Kelas</option>
+                    </select>
+                </div>
+
                 <div class="md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pilih Paket Ujian</label>
                     <select id="exam-select" class="w-full p-3 bg-gray-50 dark:bg-cyber-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-purple-500 focus:border-purple-500 dark:text-white transition-colors">
@@ -260,6 +268,7 @@
         // GLOBAL VARIABLES UNTUK USER ID (KABEL UTAMA)
         let currentGuruId = null;
         let currentGuruMapel = null;
+        let currentGuruClasses = []; // Stores the classes assigned to the guru
 
         document.addEventListener('DOMContentLoaded', async () => {
             const app = initializeApp(firebaseConfig);
@@ -278,6 +287,16 @@
                 const tokenMapel = localStorage.getItem('cbt_user_mapel');
                 currentGuruId = localStorage.getItem('cbt_user_id');
                 currentGuruMapel = tokenMapel;
+                
+                // Ambil daftar kelas guru dari localStorage
+                try {
+                    currentGuruClasses = JSON.parse(localStorage.getItem('cbt_user_kelas') || '[]');
+                } catch (e) {
+                    currentGuruClasses = [];
+                }
+
+                // Populate Class Filter Dropdown
+                populateClassFilter();
 
                 // 2. Cek apakah user sudah login di Firebase (Email/Pass atau Anonymous)
                 const isLoggedIn = user !== null;
@@ -337,11 +356,32 @@
                 }
                 generateAnalysis(examId);
             });
+
+            // Class Filter Change Logic
+            document.getElementById('class-filter').addEventListener('change', loadExams);
         });
+
+        function populateClassFilter() {
+            const classSelect = document.getElementById('class-filter');
+            // Reset but keep "Semua Kelas"
+            classSelect.innerHTML = '<option value="">Semua Kelas</option>';
+            
+            if (currentGuruClasses.length > 0) {
+                currentGuruClasses.forEach(cls => {
+                    // Jika kelas 'SEMUA', mungkin tidak perlu ditambah karena sudah ada option default
+                    if(cls !== 'SEMUA') {
+                        classSelect.add(new Option(cls, cls));
+                    }
+                });
+            }
+        }
 
         async function loadExams() {
             const select = document.getElementById('exam-select');
+            const selectedClass = document.getElementById('class-filter').value;
             
+            select.innerHTML = '<option value="">Memuat...</option>';
+
             // FILTER LOGIC: Tampilkan ujian berdasarkan ID Pembuat (jika bukan Admin Pusat)
             let q = collection(db, 'ujian_terjadwal');
             
@@ -349,18 +389,51 @@
                  q = query(q, where('dibuatOleh', '==', currentGuruId));
             }
             
-            const snap = await getDocs(q);
-            
-            select.innerHTML = '<option value="">-- Pilih Ujian untuk Dianalisis --</option>';
-            if(snap.empty) {
-                 select.innerHTML = '<option value="">Tidak ada ujian tersedia.</option>';
-                 return;
-            }
+            try {
+                const snap = await getDocs(q);
+                
+                select.innerHTML = '<option value="">-- Pilih Ujian untuk Dianalisis --</option>';
+                if(snap.empty) {
+                     select.innerHTML = '<option value="">Tidak ada ujian tersedia.</option>';
+                     return;
+                }
 
-            snap.forEach(doc => {
-                const d = doc.data();
-                select.innerHTML += `<option value="${d.kodeUjian}">${d.namaUjian} (${d.kodeUjian})</option>`;
-            });
+                let countVisible = 0;
+
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    
+                    // NORMALIZE: Ambil data kelas (bisa array atau string, bisa field 'kelas' atau 'targetKelas')
+                    const rawKelas = d.kelas || d.targetKelas;
+                    const examClasses = Array.isArray(rawKelas) ? rawKelas : (rawKelas ? [rawKelas] : []);
+                    
+                    let isVisible = true;
+
+                    // FILTERING KETAT
+                    if (selectedClass && selectedClass !== "") {
+                        // Hanya tampilkan jika kelas yang dipilih ada dalam daftar peruntukan ujian
+                        isVisible = examClasses.includes(selectedClass);
+                    }
+
+                    if (isVisible) {
+                        const classLabel = examClasses.length > 0 ? examClasses.join(', ') : 'Umum';
+                        select.innerHTML += `<option value="${d.kodeUjian}">${d.namaUjian} (${classLabel})</option>`;
+                        countVisible++;
+                    }
+                });
+
+                if (countVisible === 0) {
+                     if (selectedClass) {
+                        select.innerHTML = `<option value="" disabled>Tidak ada ujian untuk kelas ${selectedClass}</option>`;
+                     } else {
+                        select.innerHTML = '<option value="" disabled>Belum ada ujian.</option>';
+                     }
+                }
+
+            } catch (error) {
+                console.error("Error loading exams:", error);
+                select.innerHTML = '<option value="">Gagal memuat ujian.</option>';
+            }
         }
 
         async function generateAnalysis(examCode) {
@@ -376,7 +449,7 @@
 
                 // Validation for questions list
                 if (!examData.daftarIdSoal || !Array.isArray(examData.daftarIdSoal) || examData.daftarIdSoal.length === 0) {
-                     throw new Error("Daftar soal ujian ini kosong atau rusak.");
+                      throw new Error("Daftar soal ujian ini kosong atau rusak.");
                 }
 
                 // 2. Fetch Questions (Parallel) - Need Keys!
@@ -418,6 +491,7 @@
                 
                 document.getElementById('report-title').textContent = "Laporan: " + examData.namaUjian;
                 document.getElementById('report-date').textContent = "📅 " + new Date().toLocaleDateString('id-ID');
+                document.getElementById('report-class').textContent = "🏫 Kelas: " + (document.getElementById('class-filter').value || 'Semua');
                 
                 document.getElementById('stat-avg').textContent = avg.toFixed(1);
                 document.getElementById('stat-max').textContent = max;
@@ -570,5 +644,3 @@
         }
 
     </script>
-</body>
-</html>
