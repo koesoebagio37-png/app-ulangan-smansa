@@ -765,8 +765,15 @@
 
             // 4. Susun Prompt (Menggabungkan 2 Blok)
             const promptText = `
-                Peran: Guru Ahli. Tugas: Buat pembahasan soal yang edukatif dan logis.
+                Peran: Tentor Profesional & Strategis (Master Teacher Bimbingan Belajar Favorit).
+                Tugas: Buat pembahasan soal yang SINGKAT, PADAT, dan TAKTIS.
                 
+                Gaya Penjelasan:
+                1. Langsung pada inti masalah (To the Point). Hindari basa-basi teori yang bertele-tele seperti buku paket sekolah.
+                2. Gunakan "Metode Praktis", "Cara Cepat", atau "Logika Cerdas" (The King/Smart Solution) jika memungkinkan.
+                3. Uraikan langkah penyelesaian secara efisien (Step-by-step yang ringkas).
+                4. Jika soal hitungan, tunjukkan jalan pintas atau penyederhanaan.
+
                 Naskah Soal Bagian Atas: "${naskahAtas}"
                 Naskah Soal Bagian Bawah: "${naskahBawah}"
                 
@@ -774,8 +781,11 @@
                 ${optionsText}
                 
                 Konteks: Materi ${bab}, Level ${level}.
-                Instruksi: ${keyInfo}
-                PENTING: Gunakan format LaTeX $...$ untuk rumus matematika. Jangan pakai markdown berlebihan.
+                Instruksi Kunci: ${keyInfo}
+                
+                PENTING: 
+                - Gunakan format LaTeX $...$ untuk semua rumus matematika agar tampilan rapi.
+                - Akhiri dengan kesimpulan tegas: "Maka, jawaban yang tepat adalah..."
             `;
 
             // 5. Siapkan Payload (Mendukung Gambar/Multimodal)
@@ -1024,13 +1034,20 @@ async function processOptionsGeneration(naskah) {
     btnOptions.disabled = true;
 
     try {
-        const promptAI = `Peran: Guru Ahli Pembuat Soal. 
-        Tugas: Buat opsi jawaban dan tentukan KUNCI JAWABAN yang akurat berdasarkan naskah soal berikut.
+        const promptAI = `Peran: Guru Ahli Pembuat Soal & Psikometrik (Penyusun Soal Ujian Standar).
+        Tugas: Buat opsi jawaban dan tentukan KUNCI JAWABAN yang akurat berdasarkan naskah soal.
         
-        Tipe Soal yang Diminta: ${type.toUpperCase()}
+        FOKUS KHUSUS: Kualitas Pengecoh (Distractor).
+        Opsi jawaban salah TIDAK BOLEH acak. Opsi salah harus mencerminkan kesalahan umum siswa (Common Student Errors), seperti:
+        1. Kesalahan Tanda (Sign Error): Misal hasil harusnya -5, tapi opsi salah menyediakan 5.
+        2. Kesalahan Operasi/Rumus: Siswa salah menggunakan rumus (misal: Keliling dianggap Luas).
+        3. Kesalahan Konsep/Logika: Jawaban yang terlihat masuk akal tapi salah secara konsep.
+        4. Parsial: Jawaban belum selesai tapi sudah ada di opsi.
+
+        Tipe Soal: ${type.toUpperCase()}
         Naskah Soal: "${naskah}"
         
-        ATURAN PENULISAN:
+        ATURAN FORMAT OUTPUT:
         1. WAJIB LATEX: Setiap rumus matematika, pecahan, akar, atau variabel wajib diapit tanda $. Contoh: $x^2$.
         2. PG: Buat 5 opsi teks. Kunci adalah INDEX angka (0 s/d 4).
         3. PGK (Kompleks): Buat 5 opsi teks. Kunci adalah ARRAY index (misal: [0, 2]). Tentukan minimal 2 jawaban benar.
