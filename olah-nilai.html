@@ -587,6 +587,12 @@
                 eSnap.forEach(d => {
                     const data = d.data();
                     if(data.status !== 'dihapus') {
+                        // --- LOGIKA FILTER MAPEL (BARU) ---
+                        // Sama seperti Admin Ujian: filter mapel jika bukan admin pusat
+                        if (currentGuruMapel !== 'ADMIN PUSAT' && data.mapel && data.mapel !== currentGuruMapel) {
+                            return; // Skip ujian ini karena beda mapel
+                        }
+
                         const hasManualCorrection = (data.daftarIdSoal || []).some(id => manualCorrectionIds.has(id));
                         const bobot = data.bobotNilai || 1;
                         exams.push({ id: d.id, hasManualCorrection: hasManualCorrection, bobotNilai: bobot, ...data });
@@ -596,13 +602,34 @@
                 exams.sort((a,b) => new Date(b.tanggal || 0) - new Date(a.tanggal || 0));
 
                 // 3. Fetch Students
+                // --- OPTIMASI: Hanya ambil siswa yang ada di kelas yang punya ujian?
+                // Untuk sementara, kita ambil semua siswa dulu, nanti difilter di UI
                 const sSnap = await getDocs(query(collection(db, 'siswa')));
                 students = [];
+                
+                // Set kelas yang valid hanya dari ujian yang sudah difilter
+                const validClassesFromExams = new Set();
+                exams.forEach(ex => {
+                    if (ex.targetSemuaKelas) {
+                        // Jika ada ujian untuk semua kelas, maka semua kelas dianggap valid
+                        validClassesFromExams.add('ALL'); 
+                    } else if (ex.targetKelas && Array.isArray(ex.targetKelas)) {
+                        ex.targetKelas.forEach(cls => validClassesFromExams.add(cls));
+                    }
+                });
+
                 const classSet = new Set();
                 sSnap.forEach(d => {
                     const data = d.data();
                     students.push({ id: d.id, ...data });
-                    if(data.kelas) classSet.add(data.kelas);
+                    
+                    // Populate filter kelas hanya jika kelas tersebut relevan dengan ujian yang ada
+                    // ATAU jika ujiannya "Semua Kelas"
+                    if(data.kelas) {
+                        if (validClassesFromExams.has('ALL') || validClassesFromExams.has(data.kelas)) {
+                            classSet.add(data.kelas);
+                        }
+                    }
                 });
 
                 const filterKelas = document.getElementById('filter-kelas');
