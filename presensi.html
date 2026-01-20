@@ -399,6 +399,16 @@
         let currentGuruMapel = null;
         let guruKelasList = []; 
 
+        // Helper: Sort Kelas Romawi (Konsisten dengan aplikasi lain)
+        const sortKelasRomawi = (a, b) => {
+            const romans = { 'SD':0, '1':1, '2':2, '3':3, '4':4, '5':5, '6':6, 'VII':7, 'VIII':8, 'IX':9, 'X':10, 'XI':11, 'XII':12, 'UMUM':99 };
+            const valA = romans[a.replace(/Kelas/i, '').trim().toUpperCase().split('-')[0]] || 99;
+            const valB = romans[b.replace(/Kelas/i, '').trim().toUpperCase().split('-')[0]] || 99;
+            
+            if (valA !== valB) return valA - valB;
+            return a.localeCompare(b); // Sort sub-kelas (A, B, C / 1, 2, 3)
+        };
+
         document.addEventListener('DOMContentLoaded', async () => {
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
@@ -510,41 +520,56 @@
 
         async function loadClasses() {
             const select = document.getElementById('class-selector');
-            select.innerHTML = '<option value="">Pilih Kelas</option>';
+            select.innerHTML = '<option value="">Memuat kelas...</option>';
             
-            // Cek apakah Admin Pusat
             const isAdmin = (currentGuruMapel === 'ADMIN PUSAT');
 
-            if (isAdmin) {
-                // Jika Admin, muat SEMUA kelas dari database siswa
-                const q = query(collection(db, 'siswa'));
-                const snap = await getDocs(q);
+            try {
                 const classes = new Set();
-                snap.forEach(d => { if(d.data().kelas) classes.add(d.data().kelas); });
-                
-                const sortedClasses = Array.from(classes).sort();
-                sortedClasses.forEach(c => {
-                    const opt = document.createElement('option');
-                    opt.value = c; opt.textContent = c;
-                    select.appendChild(opt);
-                });
-            } else {
-                // Jika Guru Biasa, muat HANYA kelas ampuan dari localStorage
-                if (guruKelasList.length > 0) {
-                    guruKelasList.forEach(c => {
-                        // Filter jika ada kelas 'SEMUA' (kasus khusus admin yang tersimpan sbg array)
-                        if (c !== 'SEMUA') {
-                            const opt = document.createElement('option');
-                            opt.value = c; opt.textContent = c;
-                            select.appendChild(opt);
+
+                if (isAdmin) {
+                    const q = query(collection(db, 'siswa'));
+                    const snap = await getDocs(q);
+                    snap.forEach(d => { if(d.data().kelas) classes.add(d.data().kelas); });
+                } else {
+                    // LOGIKA BARU: Filter berdasarkan Ujian yang pernah dibuat untuk Mapel ini
+                    // Ini memastikan konsistensi dengan Admin Ujian (Tab Kelola)
+                    const q = query(collection(db, 'ujian_terjadwal'), where('dibuatOleh', '==', currentGuruId));
+                    const snap = await getDocs(q);
+                    
+                    snap.forEach(d => {
+                        const data = d.data();
+                        // Filter Strict Mapel
+                        if (data.mapel && data.mapel === currentGuruMapel) {
+                            // Ambil target kelas dari ujian
+                            if (data.targetKelas && Array.isArray(data.targetKelas)) {
+                                data.targetKelas.forEach(c => classes.add(c));
+                            } else if (data.kelas) {
+                                classes.add(data.kelas);
+                            }
                         }
                     });
-                } else {
+                }
+
+                select.innerHTML = '<option value="">Pilih Kelas</option>';
+                const sortedClasses = Array.from(classes).sort(sortKelasRomawi);
+                
+                if (sortedClasses.length === 0 && !isAdmin) {
                      const opt = document.createElement('option');
                      opt.disabled = true;
-                     opt.textContent = "Anda belum memiliki kelas ampuan.";
+                     opt.textContent = "Tidak ada kelas (Buat Ujian dulu)";
                      select.appendChild(opt);
+                } else {
+                    sortedClasses.forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c; opt.textContent = c;
+                        select.appendChild(opt);
+                    });
                 }
+
+            } catch (e) {
+                console.error("Error loading classes:", e);
+                select.innerHTML = '<option value="">Gagal memuat kelas</option>';
             }
         }
 
@@ -619,7 +644,11 @@
                 const docRef = doc(db, 'presensi', `${currentClass}_${currentDate}`);
                 
                 // Merge true agar tidak menghapus data absen yang sudah ada
-                await setDoc(docRef, { agenda_kegiatan: activity }, { merge: true });
+                // Added: mapel to help with data consistency and tracking
+                await setDoc(docRef, { 
+                    agenda_kegiatan: activity,
+                    mapel: currentGuruMapel // Saving mapel for consistency
+                }, { merge: true });
                 
                 const msg = document.getElementById('agenda-status-msg');
                 msg.textContent = "Agenda berhasil disimpan!";
@@ -912,7 +941,12 @@
             const updateData = {};
             if(status === '') updateData[studentId] = { status: '', time: '', method: 'manual' };
             else updateData[studentId] = { status: status, time: time, method: 'manual' };
-            await setDoc(docRef, updateData, { merge: true });
+            
+            // Added: mapel to help with data consistency
+            await setDoc(docRef, { 
+                ...updateData,
+                mapel: currentGuruMapel
+            }, { merge: true });
         };
 
         window.bulkUpdateStatus = async (status) => {
@@ -921,7 +955,12 @@
             const time = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
             const batchData = {};
             studentsInClass.forEach(s => { batchData[s.id] = { status: status, time: status ? time : '', method: 'manual' }; });
-            await setDoc(docRef, batchData, { merge: true });
+            
+            // Added: mapel to help with data consistency
+            await setDoc(docRef, { 
+                ...batchData,
+                mapel: currentGuruMapel
+            }, { merge: true });
         };
 
         // window.simulateStudentScan DELETED
