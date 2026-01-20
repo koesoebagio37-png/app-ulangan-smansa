@@ -138,6 +138,11 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-4">
+                    <!-- NEW: Filter Kelas -->
+                    <select id="filter-kelas" class="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5 w-32 md:w-40 transition-colors hidden md:block">
+                        <option value="">Semua Kelas</option>
+                    </select>
+
                     <select id="filter-ujian" class="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5 w-48 md:w-64 transition-colors">
                         <option value="">-- Pilih Kode Ujian --</option>
                     </select>
@@ -245,6 +250,7 @@
         // GLOBAL VARS FOR IDENTITY
         let currentGuruId = null;
         let currentGuruMapel = null;
+        let allExamsCache = []; // Cache untuk data ujian
 
         // Init & Auth Check
         document.addEventListener('DOMContentLoaded', async () => {
@@ -291,6 +297,9 @@
         };
 
         async function loadExamList() {
+            const select = document.getElementById('filter-ujian');
+            select.innerHTML = '<option value="">Memuat...</option>';
+
             try {
                 let q = collection(db, 'ujian_terjadwal');
                 
@@ -300,31 +309,105 @@
                 }
 
                 const snap = await getDocs(q);
-                const select = document.getElementById('filter-ujian');
-                
-                select.innerHTML = '<option value="">-- Pilih Kode Ujian --</option>';
-                
+                allExamsCache = [];
+
                 if (snap.empty) {
-                    const opt = document.createElement('option');
-                    opt.disabled = true;
-                    opt.textContent = "Belum ada ujian aktif.";
-                    select.appendChild(opt);
+                    select.innerHTML = '<option value="">Belum ada ujian aktif.</option>';
                     return;
                 }
 
                 snap.forEach(doc => {
                     const d = doc.data();
-                    // Optional: Filter status 'aktif' saja jika diinginkan
-                    const opt = document.createElement('option');
-                    opt.value = d.kodeUjian;
-                    opt.textContent = `${d.namaUjian} (${d.kodeUjian})`;
-                    select.appendChild(opt);
+                    
+                    // Filter Mapel Strict (Konsisten dengan aplikasi lain)
+                    if (currentGuruMapel !== 'ADMIN PUSAT' && d.mapel && d.mapel !== currentGuruMapel) {
+                        return; // Skip ujian mapel lain
+                    }
+
+                    allExamsCache.push({ ...d, id: doc.id });
                 });
+
+                // 1. Populate Filter Kelas Otomatis
+                populateDynamicClassFilter();
+
+                // 2. Render Dropdown Ujian Awal
+                renderExamDropdown();
+
             } catch (e) {
                 console.error("Gagal memuat ujian:", e);
                 alert("Gagal memuat daftar ujian: " + e.message);
             }
         }
+
+        // --- FILTER LOGIC (NEW) ---
+        function populateDynamicClassFilter() {
+            const classSelect = document.getElementById('filter-kelas');
+            const currentVal = classSelect.value;
+            const classSet = new Set();
+
+            allExamsCache.forEach(ex => {
+                // Ambil kelas target dari setiap ujian
+                if (ex.targetKelas && Array.isArray(ex.targetKelas)) {
+                    ex.targetKelas.forEach(c => classSet.add(c));
+                } else if (ex.kelas) { 
+                     classSet.add(ex.kelas);
+                }
+            });
+
+            const sortedClasses = Array.from(classSet).sort();
+            
+            classSelect.innerHTML = '<option value="">Semua Kelas</option>';
+            sortedClasses.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.textContent = c;
+                classSelect.appendChild(opt);
+            });
+
+            // Restore selection if valid
+            if (sortedClasses.includes(currentVal)) {
+                classSelect.value = currentVal;
+            }
+        }
+
+        function renderExamDropdown() {
+            const select = document.getElementById('filter-ujian');
+            const filterClass = document.getElementById('filter-kelas').value;
+            
+            // Stop monitoring jika list berubah agar tidak bingung
+            stopMonitoring(); 
+            select.innerHTML = '<option value="">-- Pilih Kode Ujian --</option>';
+
+            const filtered = allExamsCache.filter(ex => {
+                if (!filterClass) return true;
+                if (ex.targetSemuaKelas) return true;
+                const classes = ex.targetKelas || (ex.kelas ? [ex.kelas] : []);
+                return classes.includes(filterClass);
+            });
+
+            if (filtered.length === 0) {
+                select.innerHTML = '<option value="" disabled>Tidak ada ujian.</option>';
+                return;
+            }
+
+            // Sort (Opsional, misalnya berdasarkan tanggal)
+            filtered.sort((a,b) => new Date(b.tanggal || 0) - new Date(a.tanggal || 0));
+
+            filtered.forEach(d => {
+                let classLabel = 'Khusus';
+                if (d.targetSemuaKelas) classLabel = 'Semua Kelas';
+                else if (d.targetKelas && d.targetKelas.length > 0) classLabel = d.targetKelas.join(', ');
+                else if (d.kelas) classLabel = d.kelas;
+
+                const opt = document.createElement('option');
+                opt.value = d.kodeUjian;
+                opt.textContent = `${d.namaUjian} (${classLabel})`;
+                select.appendChild(opt);
+            });
+        }
+
+        // Listener untuk Filter Kelas
+        document.getElementById('filter-kelas').addEventListener('change', renderExamDropdown);
 
         document.getElementById('filter-ujian').addEventListener('change', (e) => {
             const code = e.target.value;
@@ -334,7 +417,7 @@
 
         function stopMonitoring() {
             if(currentListener) currentListener();
-            document.getElementById('cards-container').innerHTML = '<div class="col-span-full text-center py-20 text-slate-500">Pilih kode ujian untuk memulai.</div>';
+            document.getElementById('cards-container').innerHTML = '<div class="col-span-full text-center py-20 text-slate-500 dark:text-slate-400">Pilih kode ujian untuk memulai.</div>';
             resetStats();
         }
 
@@ -368,7 +451,7 @@
             container.innerHTML = '';
 
             if (students.length === 0) {
-                container.innerHTML = '<div class="col-span-full text-center py-20 text-slate-500">Belum ada siswa yang bergabung.</div>';
+                container.innerHTML = '<div class="col-span-full text-center py-20 text-slate-500 dark:text-slate-400">Belum ada siswa yang bergabung.</div>';
                 return;
             }
 
