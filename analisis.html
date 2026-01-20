@@ -184,7 +184,7 @@
             <div class="bg-white dark:bg-cyber-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div class="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-cyber-900/50 flex justify-between items-center">
                     <h3 class="text-lg font-bold">Analisis Butir Soal</h3>
-                    <button onclick="alert('Download CSV logic here')" class="text-sm text-purple-600 font-bold hover:underline">Download CSV</button>
+                    <button onclick="alert('Fitur Download CSV akan segera tersedia.')" class="text-sm text-purple-600 font-bold hover:underline">Download CSV</button>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left">
@@ -268,7 +268,7 @@
         // GLOBAL VARIABLES UNTUK USER ID (KABEL UTAMA)
         let currentGuruId = null;
         let currentGuruMapel = null;
-        let currentGuruClasses = []; // Stores the classes assigned to the guru
+        let allExamsCache = []; // NEW: Cache untuk menyimpan data ujian
 
         document.addEventListener('DOMContentLoaded', async () => {
             const app = initializeApp(firebaseConfig);
@@ -288,33 +288,20 @@
                 currentGuruId = localStorage.getItem('cbt_user_id');
                 currentGuruMapel = tokenMapel;
                 
-                // Ambil daftar kelas guru dari localStorage
-                try {
-                    currentGuruClasses = JSON.parse(localStorage.getItem('cbt_user_kelas') || '[]');
-                } catch (e) {
-                    currentGuruClasses = [];
-                }
-
-                // Populate Class Filter Dropdown
-                populateClassFilter();
-
                 // 2. Cek apakah user sudah login di Firebase (Email/Pass atau Anonymous)
                 const isLoggedIn = user !== null;
                 
                 // 3. LOGIKA UTAMA
                 if (isLoggedIn) {
                     // === USER SUDAH AUTH ===
-                    
-                    // Buka Akses
                     overlay.classList.add('hidden');
                     logoutBtn.classList.remove('hidden');
                     if(headerUserId) headerUserId.textContent = `${currentGuruMapel} (${currentGuruId})`;
                     
-                    loadExams(); // Load exams
+                    fetchExams(); // REPLACE: Panggil fungsi fetch baru
 
                 } else if (tokenMapel) {
                     // === USER BELUM AUTH, TAPI ADA TOKEN DARI DASHBOARD ===
-                    // Login Anonymous agar bisa akses Firestore
                     signInAnonymously(auth).catch(e => {
                         console.error("Auto-login gagal:", e);
                         loadingDiv.classList.add('hidden');
@@ -322,7 +309,6 @@
                     });
                 } else {
                     // === TIDAK ADA TOKEN & TIDAK LOGIN ===
-                    // Tampilkan Fallback
                     loadingDiv.classList.add('hidden');
                     fallbackDiv.classList.remove('hidden');
                     logoutBtn.classList.add('hidden');
@@ -357,83 +343,125 @@
                 generateAnalysis(examId);
             });
 
-            // Class Filter Change Logic
-            document.getElementById('class-filter').addEventListener('change', loadExams);
+            // Class Filter Change Logic -> UPDATE EXAM LIST
+            document.getElementById('class-filter').addEventListener('change', renderExamDropdown);
         });
 
-        function populateClassFilter() {
-            const classSelect = document.getElementById('class-filter');
-            // Reset but keep "Semua Kelas"
-            classSelect.innerHTML = '<option value="">Semua Kelas</option>';
-            
-            if (currentGuruClasses.length > 0) {
-                currentGuruClasses.forEach(cls => {
-                    // Jika kelas 'SEMUA', mungkin tidak perlu ditambah karena sudah ada option default
-                    if(cls !== 'SEMUA') {
-                        classSelect.add(new Option(cls, cls));
-                    }
-                });
-            }
-        }
-
-        async function loadExams() {
+        // --- NEW: FUNGSI FETCH UJIAN & FILTER CERDAS ---
+        async function fetchExams() {
             const select = document.getElementById('exam-select');
-            const selectedClass = document.getElementById('class-filter').value;
-            
-            select.innerHTML = '<option value="">Memuat...</option>';
+            select.innerHTML = '<option value="">Memuat data ujian...</option>';
 
-            // FILTER LOGIC: Tampilkan ujian berdasarkan ID Pembuat (jika bukan Admin Pusat)
             let q = collection(db, 'ujian_terjadwal');
             
+            // FILTER 1: DIBUAT OLEH (Level Database)
             if (currentGuruMapel !== 'ADMIN PUSAT' && currentGuruId) {
                  q = query(q, where('dibuatOleh', '==', currentGuruId));
             }
-            
+
             try {
                 const snap = await getDocs(q);
-                
-                select.innerHTML = '<option value="">-- Pilih Ujian untuk Dianalisis --</option>';
-                if(snap.empty) {
-                     select.innerHTML = '<option value="">Tidak ada ujian tersedia.</option>';
-                     return;
-                }
-
-                let countVisible = 0;
+                allExamsCache = [];
 
                 snap.forEach(doc => {
                     const d = doc.data();
                     
-                    // NORMALIZE: Ambil data kelas (bisa array atau string, bisa field 'kelas' atau 'targetKelas')
-                    const rawKelas = d.kelas || d.targetKelas;
-                    const examClasses = Array.isArray(rawKelas) ? rawKelas : (rawKelas ? [rawKelas] : []);
+                    // FILTER 2: MAPEL MATCH (Level Aplikasi)
+                    // Jika bukan Admin Pusat, dan ujian punya label Mapel, 
+                    // hanya ambil yang mapelnya SAMA dengan login saat ini.
+                    if (currentGuruMapel !== 'ADMIN PUSAT' && d.mapel && d.mapel !== currentGuruMapel) {
+                        return; // Skip ujian mapel lain
+                    }
                     
-                    let isVisible = true;
-
-                    // FILTERING KETAT
-                    if (selectedClass && selectedClass !== "") {
-                        // Hanya tampilkan jika kelas yang dipilih ada dalam daftar peruntukan ujian
-                        isVisible = examClasses.includes(selectedClass);
-                    }
-
-                    if (isVisible) {
-                        const classLabel = examClasses.length > 0 ? examClasses.join(', ') : 'Umum';
-                        select.innerHTML += `<option value="${d.kodeUjian}">${d.namaUjian} (${classLabel})</option>`;
-                        countVisible++;
-                    }
+                    allExamsCache.push({ ...d, id: doc.id });
                 });
 
-                if (countVisible === 0) {
-                     if (selectedClass) {
-                        select.innerHTML = `<option value="" disabled>Tidak ada ujian untuk kelas ${selectedClass}</option>`;
-                     } else {
-                        select.innerHTML = '<option value="" disabled>Belum ada ujian.</option>';
-                     }
-                }
+                // 1. Isi Dropdown Filter Kelas secara Dinamis berdasarkan Ujian yg ada
+                populateDynamicClassFilter();
 
-            } catch (error) {
-                console.error("Error loading exams:", error);
-                select.innerHTML = '<option value="">Gagal memuat ujian.</option>';
+                // 2. Render Dropdown Ujian (mengikuti filter default 'Semua Kelas')
+                renderExamDropdown();
+
+            } catch (e) {
+                console.error(e);
+                select.innerHTML = '<option value="">Gagal memuat data.</option>';
             }
+        }
+
+        // --- NEW: POPULATE FILTER KELAS DARI DATA CACHE ---
+        function populateDynamicClassFilter() {
+            const classSelect = document.getElementById('class-filter');
+            const currentVal = classSelect.value;
+            const classSet = new Set();
+
+            allExamsCache.forEach(ex => {
+                // Ambil kelas target dari setiap ujian
+                if (ex.targetKelas && Array.isArray(ex.targetKelas)) {
+                    ex.targetKelas.forEach(c => classSet.add(c));
+                } else if (ex.kelas) { // Fallback data lama
+                     classSet.add(ex.kelas);
+                }
+                // Jika targetSemuaKelas, kita tidak perlu menambahkan spesifik 'SEMUA' karena sudah default
+            });
+
+            const sortedClasses = Array.from(classSet).sort();
+            
+            classSelect.innerHTML = '<option value="">Semua Kelas</option>';
+            sortedClasses.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.textContent = c;
+                classSelect.appendChild(opt);
+            });
+
+            // Restore selection if valid
+            if (sortedClasses.includes(currentVal)) {
+                classSelect.value = currentVal;
+            }
+        }
+
+        // --- NEW: RENDER UJIAN BERDASARKAN FILTER KELAS ---
+        function renderExamDropdown() {
+            const select = document.getElementById('exam-select');
+            const filterClass = document.getElementById('class-filter').value;
+            
+            select.innerHTML = '<option value="">-- Pilih Ujian untuk Dianalisis --</option>';
+
+            const filtered = allExamsCache.filter(ex => {
+                // Jika filter kosong, tampilkan semua
+                if (!filterClass) return true;
+                
+                // Jika ujian ini untuk "Semua Kelas", tampilkan juga
+                if (ex.targetSemuaKelas) return true;
+                
+                // Cek apakah array targetKelas mengandung kelas yang dipilih
+                const classes = ex.targetKelas || (ex.kelas ? [ex.kelas] : []);
+                return classes.includes(filterClass);
+            });
+
+            if (filtered.length === 0) {
+                if (filterClass) {
+                    select.innerHTML = `<option value="" disabled>Tidak ada ujian untuk kelas ${filterClass}</option>`;
+                } else {
+                    select.innerHTML = '<option value="" disabled>Belum ada data ujian.</option>';
+                }
+                return;
+            }
+
+            // Sort by date (Terbaru di atas)
+            filtered.sort((a,b) => new Date(b.tanggal || 0) - new Date(a.tanggal || 0));
+
+            filtered.forEach(ex => {
+                let classLabel = 'Khusus';
+                if (ex.targetSemuaKelas) classLabel = 'Semua Kelas';
+                else if (ex.targetKelas && ex.targetKelas.length > 0) classLabel = ex.targetKelas.join(', ');
+                else if (ex.kelas) classLabel = ex.kelas;
+
+                const opt = document.createElement('option');
+                opt.value = ex.kodeUjian;
+                opt.textContent = `${ex.namaUjian} (${classLabel})`;
+                select.appendChild(opt);
+            });
         }
 
         async function generateAnalysis(examCode) {
@@ -644,3 +672,5 @@
         }
 
     </script>
+</body>
+</html>
