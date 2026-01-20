@@ -1416,7 +1416,17 @@
                     
                     allActiveExams = []; // Reset cache
                     snap.forEach(d => {
-                        allActiveExams.push({ id: d.id, ...d.data() });
+                        const data = d.data();
+                        
+                        // --- LOGIKA FIX: FILTER MAPEL SPESIFIK ---
+                        // Jika bukan Admin Pusat, dan ujian punya label Mapel,
+                        // pastikan label Mapel ujian SAMA dengan Mapel Login saat ini.
+                        // Jika BEDA, maka skip (jangan masukkan ke list).
+                        if (currentGuruMapel !== 'ADMIN PUSAT' && data.mapel && data.mapel !== currentGuruMapel) {
+                            return; 
+                        }
+                        
+                        allActiveExams.push({ id: d.id, ...data });
                     });
 
                     // 1. Populate Filter Dropdown secara Otomatis
