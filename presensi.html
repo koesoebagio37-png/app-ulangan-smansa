@@ -520,56 +520,40 @@
 
         async function loadClasses() {
             const select = document.getElementById('class-selector');
-            select.innerHTML = '<option value="">Memuat kelas...</option>';
+            select.innerHTML = '<option value="">Pilih Kelas</option>';
             
             const isAdmin = (currentGuruMapel === 'ADMIN PUSAT');
 
-            try {
+            if (isAdmin) {
+                // Jika Admin, muat SEMUA kelas dari database siswa
+                const q = query(collection(db, 'siswa'));
+                const snap = await getDocs(q);
                 const classes = new Set();
-
-                if (isAdmin) {
-                    const q = query(collection(db, 'siswa'));
-                    const snap = await getDocs(q);
-                    snap.forEach(d => { if(d.data().kelas) classes.add(d.data().kelas); });
-                } else {
-                    // LOGIKA BARU: Filter berdasarkan Ujian yang pernah dibuat untuk Mapel ini
-                    // Ini memastikan konsistensi dengan Admin Ujian (Tab Kelola)
-                    const q = query(collection(db, 'ujian_terjadwal'), where('dibuatOleh', '==', currentGuruId));
-                    const snap = await getDocs(q);
-                    
-                    snap.forEach(d => {
-                        const data = d.data();
-                        // Filter Strict Mapel
-                        if (data.mapel && data.mapel === currentGuruMapel) {
-                            // Ambil target kelas dari ujian
-                            if (data.targetKelas && Array.isArray(data.targetKelas)) {
-                                data.targetKelas.forEach(c => classes.add(c));
-                            } else if (data.kelas) {
-                                classes.add(data.kelas);
-                            }
-                        }
-                    });
-                }
-
-                select.innerHTML = '<option value="">Pilih Kelas</option>';
-                const sortedClasses = Array.from(classes).sort(sortKelasRomawi);
+                snap.forEach(d => { if(d.data().kelas) classes.add(d.data().kelas); });
                 
-                if (sortedClasses.length === 0 && !isAdmin) {
-                     const opt = document.createElement('option');
-                     opt.disabled = true;
-                     opt.textContent = "Tidak ada kelas (Buat Ujian dulu)";
-                     select.appendChild(opt);
-                } else {
-                    sortedClasses.forEach(c => {
+                const sortedClasses = Array.from(classes).sort(sortKelasRomawi);
+                sortedClasses.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c; opt.textContent = c;
+                    select.appendChild(opt);
+                });
+            } else {
+                // Jika Guru Biasa, muat HANYA kelas ampuan dari localStorage
+                if (guruKelasList.length > 0) {
+                    // Filter "SEMUA" dan urutkan
+                    const filteredList = guruKelasList.filter(c => c !== 'SEMUA').sort(sortKelasRomawi);
+                    
+                    filteredList.forEach(c => {
                         const opt = document.createElement('option');
                         opt.value = c; opt.textContent = c;
                         select.appendChild(opt);
                     });
+                } else {
+                     const opt = document.createElement('option');
+                     opt.disabled = true;
+                     opt.textContent = "Anda belum memiliki kelas ampuan.";
+                     select.appendChild(opt);
                 }
-
-            } catch (e) {
-                console.error("Error loading classes:", e);
-                select.innerHTML = '<option value="">Gagal memuat kelas</option>';
             }
         }
 
