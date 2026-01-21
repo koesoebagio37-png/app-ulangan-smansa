@@ -470,11 +470,22 @@
                 localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
             });
 
-            document.getElementById('date-picker').valueAsDate = new Date();
-            const d = new Date();
-            const monthStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2, '0')}`;
+            // FIXED: Date Initialization to Local Time (WIB/WIT/WITA)
+            // Masalah tanggal mundur satu hari disebabkan oleh new Date() yang kadang mengambil UTC
+            // Kita paksa ambil komponen lokal (Tahun, Bulan, Hari)
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const localDateString = `${year}-${month}-${day}`;
+            
+            const datePicker = document.getElementById('date-picker');
+            datePicker.value = localDateString;
+
+            // Set default report month too
+            const monthStr = `${year}-${month}`;
             document.getElementById('report-month').value = monthStr;
-            document.getElementById('agenda-history-month').value = monthStr; // Default for agenda
+            document.getElementById('agenda-history-month').value = monthStr; 
 
             // loadClasses dipanggil setelah Auth sukses
 
