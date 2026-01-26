@@ -1077,29 +1077,55 @@
             document.getElementById('print-class').textContent = s.kelas;
             document.getElementById('print-nis').textContent = s.id;
             document.getElementById('print-date').textContent = new Date().toLocaleDateString('id-ID');
-            document.getElementById('print-avg').textContent = s.avg ? s.avg.toFixed(2) : '0.00';
-
+            
             const tbody = document.getElementById('print-body');
             tbody.innerHTML = '';
             
-            exams.forEach((e, idx) => {
-                const record = scores[s.id]?.[e.kodeUjian];
-                const val = record ? Math.round(record.skor) : 0;
-                const bobot = e.bobotNilai || 1;
-                
-                let predikat = "D";
-                if(val >= 90) predikat = "A";
-                else if(val >= 80) predikat = "B";
-                else if(val >= 70) predikat = "C";
-
-                tbody.innerHTML += `<tr>
-                    <td class="border border-black p-2 text-center">${idx+1}</td>
-                    <td class="border border-black p-2">${e.namaUjian}</td>
-                    <td class="border border-black p-2 text-center">${bobot}</td>
-                    <td class="border border-black p-2 text-center font-bold">${val}</td>
-                    <td class="border border-black p-2 text-center">${predikat}</td>
-                </tr>`;
+            // 1. FILTER: HANYA UJIAN YANG TARGET KELASNYA SESUAI DENGAN SISWA
+            const studentExams = exams.filter(e => {
+                if (e.targetSemuaKelas) return true;
+                return e.targetKelas && e.targetKelas.includes(s.kelas);
             });
+
+            let totalWeightedScore = 0;
+            let totalWeight = 0;
+
+            if (studentExams.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="border border-black p-2 text-center italic">Tidak ada data ujian untuk kelas ini.</td></tr>';
+                document.getElementById('print-avg').textContent = '0.00';
+            } else {
+                let displayedCount = 0;
+                studentExams.forEach((e) => {
+                    const record = scores[s.id]?.[e.kodeUjian];
+                    // Jika belum dikerjakan, tampilkan nilai 0 (bisa diganti '-' jika ingin)
+                    const val = record ? Math.round(record.skor) : 0;
+                    const bobot = parseFloat(e.bobotNilai) || 1;
+                    
+                    // Hitung Rata-rata hanya dari yang SUDAH dikerjakan (memiliki record)
+                    // Ini agar rata-rata tidak jatuh karena ujian yang belum dikerjakan
+                    if (record && record.skor !== undefined) {
+                        totalWeightedScore += parseFloat(record.skor) * bobot;
+                        totalWeight += bobot;
+                    }
+
+                    let predikat = "D";
+                    if(val >= 90) predikat = "A";
+                    else if(val >= 80) predikat = "B";
+                    else if(val >= 70) predikat = "C";
+
+                    tbody.innerHTML += `<tr>
+                        <td class="border border-black p-2 text-center">${++displayedCount}</td>
+                        <td class="border border-black p-2">${e.namaUjian}</td>
+                        <td class="border border-black p-2 text-center">${bobot}</td>
+                        <td class="border border-black p-2 text-center font-bold">${val}</td>
+                        <td class="border border-black p-2 text-center">${predikat}</td>
+                    </tr>`;
+                });
+                
+                // Hitung rata-rata akhir
+                const finalAvg = totalWeight > 0 ? (totalWeightedScore / totalWeight) : 0;
+                document.getElementById('print-avg').textContent = finalAvg.toFixed(2);
+            }
 
             setTimeout(() => window.print(), 500);
         }
