@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Presensi Hybrid & Agenda - Comfort & Glow</title>
+    <title>Presensi Mapel - Comfort & Glow</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -93,7 +93,7 @@
                         <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 17h4.01M16 3h5v5h-5V3zm0 13h5v5h-5v-5zm-9 4h10v2h-10v-2zm-6-6h10v2h-10v-2z"></path></svg>
                     </div>
                     <div>
-                        <h1 class="text-xl font-bold tracking-tight">Presensi <span class="text-pink-500">Hybrid</span></h1>
+                        <h1 class="text-xl font-bold tracking-tight">Presensi <span class="text-pink-500">Per Mapel</span></h1>
                         <h1 class="text-[12px] text-gray-500 dark:text-gray-400">Scan QR & Jurnal Guru</h1>
                         <p class="text-[11px] text-gray-400 italic" id="header-user-id">Connecting...</p>
                     </div>
@@ -167,8 +167,8 @@
             <div class="bg-white dark:bg-cyber-800 w-full max-w-6xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col max-h-[90vh]">
                 <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-cyber-900/50 rounded-t-2xl">
                     <div>
-                        <h2 class="text-xl font-bold text-gray-800 dark:text-white">Arsip & Laporan Presensi Bulanan</h2>
-                        <p class="text-sm text-gray-500">Data tersimpan otomatis di server. Pilih bulan untuk melihat arsip.</p>
+                        <h2 class="text-xl font-bold text-gray-800 dark:text-white">Arsip Presensi Mapel: <span id="report-mapel-title" class="text-indigo-500">...</span></h2>
+                        <p class="text-sm text-gray-500">Data tersimpan spesifik untuk mapel ini.</p>
                     </div>
                     <button onclick="window.toggleReportPanel()" class="text-gray-400 hover:text-gray-600 dark:hover:text-white">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -200,9 +200,9 @@
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg> 
                                 Download CSV
                             </button>
-                            <button onclick="window.resetMonthlyData()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 px-4 rounded-lg shadow transition-colors flex items-center gap-2" title="Hapus Permanen Data Bulan Ini">
+                            <button onclick="window.resetMonthlyData()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 px-4 rounded-lg shadow transition-colors flex items-center gap-2" title="Kosongkan Data Bulan Ini (Soft Reset)">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                Hapus Permanen
+                                Hapus
                             </button>
                         </div>
                     </div>
@@ -215,7 +215,7 @@
                                 <tr id="report-header-row"></tr>
                             </thead>
                             <tbody id="report-body" class="divide-y divide-gray-200 dark:divide-gray-700">
-                                <tr><td class="p-12 text-center text-gray-400 italic">Silakan pilih bulan dan klik tombol "Lihat Data" untuk menampilkan arsip.</td></tr>
+                                <tr><td class="p-12 text-center text-gray-400 italic">Silakan pilih bulan dan klik tombol "Lihat Data" untuk menampilkan arsip mapel ini.</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -224,13 +224,13 @@
         </div>
     </div>
 
-    <!-- Agenda History Modal (NEW) -->
+    <!-- Agenda History Modal -->
     <div id="agenda-history-modal" class="fixed inset-0 z-[70] hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto">
         <div class="min-h-screen flex items-center justify-center p-4">
             <div class="bg-white dark:bg-cyber-800 w-full max-w-4xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700">
                 <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-orange-50 dark:bg-cyber-900/50 rounded-t-2xl">
                     <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                        <span class="bg-orange-500 text-white p-1 rounded">📅</span> Riwayat Agenda Guru
+                        <span class="bg-orange-500 text-white p-1 rounded">📅</span> Riwayat Agenda Mapel
                     </h3>
                     <button onclick="document.getElementById('agenda-history-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 dark:hover:text-white">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -262,7 +262,7 @@
                             </tr>
                         </thead>
                         <tbody id="agenda-history-body" class="divide-y divide-gray-200 dark:divide-gray-700">
-                            <tr><td colspan="5" class="p-8 text-center text-gray-400 italic">Pilih bulan untuk melihat riwayat agenda.</td></tr>
+                            <tr><td colspan="5" class="p-8 text-center text-gray-400 italic">Pilih bulan untuk melihat riwayat agenda mapel ini.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -278,7 +278,7 @@
             <!-- QR Card -->
             <div class="bg-white dark:bg-cyber-800 rounded-2xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
                 <div class="p-4 bg-pink-500 text-white text-center flex justify-between items-center">
-                    <h2 class="font-bold text-lg">QR Code Kelas</h2>
+                    <h2 class="font-bold text-lg">QR Code Mapel</h2>
                     <button onclick="window.toggleQrFullscreen()" class="text-white hover:text-pink-200" title="Perbesar Layar Penuh">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
                     </button>
@@ -288,7 +288,7 @@
                         <img id="qr-image" src="" class="w-full h-full object-contain" alt="QR Code">
                     </div>
                     <div id="qr-placeholder" class="w-48 h-48 flex items-center justify-center text-gray-400 text-sm text-center border-2 border-dashed rounded-lg">
-                        Pilih kelas untuk<br>menampilkan QR
+                        Pilih kelas untuk<br>menampilkan QR Mapel
                     </div>
                     
                     <div class="mt-6 flex items-center gap-2 text-sm font-mono text-gray-600">
@@ -301,7 +301,7 @@
 
             <!-- Summary Stats -->
             <div class="bg-white dark:bg-cyber-800 rounded-2xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-                <h3 class="font-bold text-gray-700 dark:text-gray-200 mb-4">Ringkasan Hari Ini</h3>
+                <h3 class="font-bold text-gray-700 dark:text-gray-200 mb-4">Ringkasan Mapel Ini</h3>
                 <div class="grid grid-cols-2 gap-4">
                     <div class="p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-800">
                         <span class="block text-2xl font-bold text-green-600 dark:text-green-400" id="count-h">0</span>
@@ -332,8 +332,8 @@
                 </div>
                 <div class="p-4 space-y-3">
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 mb-1">Kegiatan Pembelajaran (Hari Ini)</label>
-                        <textarea id="agenda-activity" rows="4" class="w-full p-3 rounded-lg border border-gray-300 dark:bg-cyber-900 dark:border-gray-600 dark:text-white text-sm focus:ring-orange-500 focus:border-orange-500" placeholder="Contoh: Membahas materi Trigonometri Dasar..."></textarea>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">Kegiatan Pembelajaran (Mapel Ini)</label>
+                        <textarea id="agenda-activity" rows="4" class="w-full p-3 rounded-lg border border-gray-300 dark:bg-cyber-900 dark:border-gray-600 dark:text-white text-sm focus:ring-orange-500 focus:border-orange-500" placeholder="Contoh: Membahas materi..."></textarea>
                     </div>
                     <button onclick="window.saveAgenda()" id="btn-save-agenda" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 rounded-lg text-sm shadow transition-colors flex justify-center items-center gap-2">
                         <span>Simpan Agenda</span>
@@ -341,14 +341,12 @@
                     <p id="agenda-status-msg" class="text-xs text-center text-gray-400 hidden">Tersimpan otomatis.</p>
                 </div>
             </div>
-
-            <!-- SIMULATOR TELAH DIHAPUS DARI SINI -->
         </div>
 
         <!-- RIGHT COLUMN: ATTENDANCE LIST -->
         <div class="lg:col-span-2 bg-white dark:bg-cyber-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col h-[calc(100vh-8rem)]">
             <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-cyber-900/50">
-                <h3 class="font-bold text-gray-800 dark:text-white">Daftar Jurnal Manual</h3>
+                <h3 class="font-bold text-gray-800 dark:text-white">Jurnal Presensi: <span id="journal-mapel-title" class="text-pink-600">...</span></h3>
                 <div class="flex gap-2">
                     <button id="mark-all-h" class="px-3 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 font-bold transition">Semua Hadir</button>
                     <button id="reset-all" class="px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 font-bold transition">Reset Hari Ini</button>
@@ -389,24 +387,23 @@
         let currentClass = '';
         let currentDate = '';
         let currentReportData = null; 
-        let currentAgendaData = []; // NEW Global untuk simpan data agenda
+        let currentAgendaData = []; 
+        let currentLegacyData = null; // New for fallback mechanism
         
         let currentScale = 1;
         let startX, startY, translateX=0, translateY=0;
         
         // --- GLOBAL IDENTITY VARS (INTEGRATION) ---
         let currentGuruId = null;
-        let currentGuruMapel = null;
+        let currentGuruMapel = null; // KEY VARIABLE
         let guruKelasList = []; 
 
-        // Helper: Sort Kelas Romawi (Konsisten dengan aplikasi lain)
         const sortKelasRomawi = (a, b) => {
             const romans = { 'SD':0, '1':1, '2':2, '3':3, '4':4, '5':5, '6':6, 'VII':7, 'VIII':8, 'IX':9, 'X':10, 'XI':11, 'XII':12, 'UMUM':99 };
             const valA = romans[a.replace(/Kelas/i, '').trim().toUpperCase().split('-')[0]] || 99;
             const valB = romans[b.replace(/Kelas/i, '').trim().toUpperCase().split('-')[0]] || 99;
-            
             if (valA !== valB) return valA - valB;
-            return a.localeCompare(b); // Sort sub-kelas (A, B, C / 1, 2, 3)
+            return a.localeCompare(b);
         };
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -414,7 +411,6 @@
             db = getFirestore(app);
             auth = getAuth(app);
 
-            // AUTH LISTENER & PORTAL CHECK
             onAuthStateChanged(auth, (user) => {
                 const overlay = document.getElementById('login-overlay');
                 const logoutBtn = document.getElementById('logout-btn');
@@ -422,40 +418,38 @@
                 const fallbackDiv = document.getElementById('login-fallback');
                 const headerUserId = document.getElementById('header-user-id');
 
-                // 1. Cek Token Mapel dari LocalStorage (diset oleh Dashboard)
                 const tokenMapel = localStorage.getItem('cbt_user_mapel');
                 currentGuruId = localStorage.getItem('cbt_user_id');
                 currentGuruMapel = tokenMapel;
                 
+                // Set UI Titles based on Mapel
+                if(currentGuruMapel) {
+                    document.getElementById('report-mapel-title').textContent = currentGuruMapel;
+                    document.getElementById('journal-mapel-title').textContent = currentGuruMapel;
+                }
+
                 try {
                     const savedKelas = localStorage.getItem('cbt_user_kelas');
                     guruKelasList = savedKelas ? JSON.parse(savedKelas) : [];
                 } catch(e) { guruKelasList = []; }
 
-                // 2. LOGIKA UTAMA
                 if (user && tokenMapel) {
-                    // SUKSES LOGIN & ADA SESI PORTAL
                     overlay.classList.add('hidden');
                     if(logoutBtn) logoutBtn.classList.remove('hidden');
                     if(headerUserId) headerUserId.textContent = `${currentGuruMapel} (${currentGuruId})`;
-                    loadClasses(); // Load kelas
+                    loadClasses();
                 } else if (tokenMapel) {
-                    // BELUM LOGIN TAPI ADA TOKEN -> AUTO LOGIN ANONIM
                     signInAnonymously(auth).catch(err => {
                         console.error("Auto login failed:", err);
                         loadingDiv.classList.add('hidden');
                         fallbackDiv.classList.remove('hidden');
                     });
                 } else {
-                    // TIDAK ADA TOKEN -> TOLAK AKSES
                     loadingDiv.classList.add('hidden');
                     fallbackDiv.classList.remove('hidden');
                     if(logoutBtn) logoutBtn.classList.add('hidden');
                 }
             });
-
-            // Tidak ada lagi form login manual di sini karena wajib via Portal
-            // Form admin login lama dihapus/disembunyikan oleh overlay baru
 
             document.getElementById('logout-btn').addEventListener('click', () => { 
                 if(confirm("Tutup aplikasi?")) {
@@ -470,9 +464,6 @@
                 localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
             });
 
-            // FIXED: Date Initialization to Local Time (WIB/WIT/WITA)
-            // Masalah tanggal mundur satu hari disebabkan oleh new Date() yang kadang mengambil UTC
-            // Kita paksa ambil komponen lokal (Tahun, Bulan, Hari)
             const today = new Date();
             const year = today.getFullYear();
             const month = String(today.getMonth() + 1).padStart(2, '0');
@@ -481,13 +472,8 @@
             
             const datePicker = document.getElementById('date-picker');
             datePicker.value = localDateString;
-
-            // Set default report month too
-            const monthStr = `${year}-${month}`;
-            document.getElementById('report-month').value = monthStr;
-            document.getElementById('agenda-history-month').value = monthStr; 
-
-            // loadClasses dipanggil setelah Auth sukses
+            document.getElementById('report-month').value = `${year}-${month}`;
+            document.getElementById('agenda-history-month').value = `${year}-${month}`; 
 
             document.getElementById('class-selector').addEventListener('change', initAttendanceSession);
             document.getElementById('date-picker').addEventListener('change', initAttendanceSession);
@@ -516,11 +502,8 @@
         function updateTransform() {
             document.getElementById('zoom-viewer-img').style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentScale})`;
         }
-
-        // Pan Logic for Zoom Viewer
         const zoomImg = document.getElementById('zoom-viewer-img');
         let isDragging = false;
-        
         zoomImg.addEventListener('mousedown', e => {
             if(currentScale > 1) { isDragging = true; startX = e.clientX - translateX; startY = e.clientY - translateY; }
         });
@@ -532,16 +515,12 @@
         async function loadClasses() {
             const select = document.getElementById('class-selector');
             select.innerHTML = '<option value="">Pilih Kelas</option>';
-            
             const isAdmin = (currentGuruMapel === 'ADMIN PUSAT');
-
             if (isAdmin) {
-                // Jika Admin, muat SEMUA kelas dari database siswa
                 const q = query(collection(db, 'siswa'));
                 const snap = await getDocs(q);
                 const classes = new Set();
                 snap.forEach(d => { if(d.data().kelas) classes.add(d.data().kelas); });
-                
                 const sortedClasses = Array.from(classes).sort(sortKelasRomawi);
                 sortedClasses.forEach(c => {
                     const opt = document.createElement('option');
@@ -549,11 +528,8 @@
                     select.appendChild(opt);
                 });
             } else {
-                // Jika Guru Biasa, muat HANYA kelas ampuan dari localStorage
                 if (guruKelasList.length > 0) {
-                    // Filter "SEMUA" dan urutkan
                     const filteredList = guruKelasList.filter(c => c !== 'SEMUA').sort(sortKelasRomawi);
-                    
                     filteredList.forEach(c => {
                         const opt = document.createElement('option');
                         opt.value = c; opt.textContent = c;
@@ -574,6 +550,12 @@
             document.getElementById('report-class-display').value = kelas || '-';
             if(!kelas || !tanggal) return;
 
+            // SAFETY CHECK: Ensure mapel is loaded
+            if(!currentGuruMapel) {
+                alert("Identitas Mata Pelajaran tidak ditemukan. Silakan Login ulang dari Portal.");
+                return;
+            }
+
             currentClass = kelas; currentDate = tanggal;
             generateNewToken();
             document.getElementById('qr-container').classList.remove('hidden');
@@ -593,7 +575,9 @@
             const token = Math.random().toString(36).substring(2, 6).toUpperCase();
             document.getElementById('token-display').textContent = token;
             document.getElementById('token-display-full').textContent = token;
-            const qrData = JSON.stringify({ c: currentClass, d: currentDate, t: token });
+            
+            // NOTE: QR Data now includes 'm' (mapel) to verify students are scanning correct subject
+            const qrData = JSON.stringify({ c: currentClass, d: currentDate, t: token, m: currentGuruMapel });
             const url = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(qrData)}`;
             document.getElementById('qr-image').src = url;
             document.getElementById('qr-image-full').src = url;
@@ -601,49 +585,74 @@
 
         function setupRealtimeListener(kelas, tanggal) {
             if(currentUnsubscribe) currentUnsubscribe();
-            const docRef = doc(db, 'presensi', `${kelas}_${tanggal}`);
             
-            // Set Agenda Input to empty/loading state initially
+            // KEY CHANGE: Unique Document ID per Mapel
+            const docId = `${kelas}_${currentGuruMapel}_${tanggal}`;
+            const docRef = doc(db, 'presensi', docId);
+            
             document.getElementById('agenda-activity').value = "";
+            currentLegacyData = null; // Reset legacy data tracker
 
-            currentUnsubscribe = onSnapshot(docRef, (docSnap) => {
-                const attendanceData = docSnap.exists() ? docSnap.data() : {};
+            currentUnsubscribe = onSnapshot(docRef, async (docSnap) => {
+                let attendanceData = {};
+                
+                if (docSnap.exists()) {
+                    attendanceData = docSnap.data();
+                    currentLegacyData = null; // Data exists in new path, so no need for legacy
+                } else {
+                    // FALLBACK: Try check legacy path (Kelas_Tanggal) if new path is empty
+                    // This handles migration view (viewing old data in new system)
+                    const legacyId = `${kelas}_${tanggal}`;
+                    try {
+                        const legacySnap = await getDoc(doc(db, 'presensi', legacyId));
+                        if(legacySnap.exists()) {
+                            attendanceData = legacySnap.data();
+                            currentLegacyData = attendanceData; // Mark as legacy so we can migrate on save
+                            console.log("Legacy data loaded for viewing");
+                        }
+                    } catch(e) { console.log("No legacy data found"); }
+                }
+
                 renderTable(attendanceData);
                 updateSummary(attendanceData);
                 
-                // --- LOAD AGENDA KEGIATAN ---
-                // Jika ada data agenda di Firestore, tampilkan. Jika tidak, kosongkan.
                 const agendaText = attendanceData.agenda_kegiatan || "";
                 const agendaInput = document.getElementById('agenda-activity');
-                
-                // Hanya update jika input tidak sedang diketik (optional, tapi untuk realtime sederhana kita timpa saja agar sync)
-                // Atau, kita bisa cek apakah value berbeda agar kursor tidak lompat.
                 if (agendaInput.value !== agendaText && document.activeElement !== agendaInput) {
                     agendaInput.value = agendaText;
                 }
             });
         }
 
-        // --- AGENDA FUNCTIONS ---
-        
         window.saveAgenda = async () => {
             if(!currentClass || !currentDate) return alert("Pilih Kelas dan Tanggal dulu!");
             
             const btn = document.getElementById('btn-save-agenda');
             const originalText = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = `<svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Menyimpan...`;
+            btn.innerHTML = `Menyimpan...`;
 
             try {
                 const activity = document.getElementById('agenda-activity').value;
-                const docRef = doc(db, 'presensi', `${currentClass}_${currentDate}`);
+                // KEY CHANGE: ID Includes Mapel
+                const docRef = doc(db, 'presensi', `${currentClass}_${currentGuruMapel}_${currentDate}`);
                 
-                // Merge true agar tidak menghapus data absen yang sudah ada
-                // Added: mapel to help with data consistency and tracking
-                await setDoc(docRef, { 
+                let dataToSave = { 
                     agenda_kegiatan: activity,
-                    mapel: currentGuruMapel // Saving mapel for consistency
-                }, { merge: true });
+                    mapel: currentGuruMapel,
+                    guru_id: currentGuruId
+                };
+
+                // MIGRATION LOGIC: If we are viewing legacy data, include it in the save to migrate it
+                if (currentLegacyData) {
+                    dataToSave = { ...currentLegacyData, ...dataToSave };
+                }
+                
+                // UPDATE: Also save Guru ID to track WHO submitted it
+                await setDoc(docRef, dataToSave, { merge: true });
+                
+                // Clear legacy flag as now data exists in new path
+                currentLegacyData = null; 
                 
                 const msg = document.getElementById('agenda-status-msg');
                 msg.textContent = "Agenda berhasil disimpan!";
@@ -660,13 +669,12 @@
 
         window.openAgendaHistory = () => {
             document.getElementById('agenda-history-modal').classList.remove('hidden');
-            // Auto fetch current month if class is selected
             if(currentClass) window.fetchAgendaHistory();
         };
 
         window.fetchAgendaHistory = async () => {
             const monthVal = document.getElementById('agenda-history-month').value;
-            const kelas = currentClass; // Gunakan kelas yang sedang aktif, atau bisa tambah dropdown filter kelas di modal
+            const kelas = currentClass;
             const tbody = document.getElementById('agenda-history-body');
 
             if(!kelas) {
@@ -676,7 +684,7 @@
             if(!monthVal) return;
 
             tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center">Memuat riwayat agenda...</td></tr>';
-            currentAgendaData = []; // Reset global data
+            currentAgendaData = []; 
 
             const [year, month] = monthVal.split('-');
             const daysInMonth = new Date(year, month, 0).getDate();
@@ -684,8 +692,8 @@
             const promises = [];
             for(let d=1; d<=daysInMonth; d++) {
                 const dateStr = `${monthVal}-${String(d).padStart(2, '0')}`;
-                const docId = `${kelas}_${dateStr}`;
-                // Fetch document
+                // KEY CHANGE: ID Includes Mapel
+                const docId = `${kelas}_${currentGuruMapel}_${dateStr}`;
                 promises.push(getDoc(doc(db, 'presensi', docId)).then(snap => ({ 
                     date: dateStr, 
                     data: snap.exists() ? snap.data() : null 
@@ -693,13 +701,12 @@
             }
 
             const results = await Promise.all(promises);
-            // Filter hanya yang punya agenda
             const agendas = results.filter(r => r.data && r.data.agenda_kegiatan);
-            currentAgendaData = agendas; // Simpan ke global untuk export
+            currentAgendaData = agendas; 
 
             tbody.innerHTML = '';
             if (agendas.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-gray-400 italic">Tidak ada agenda tercatat untuk bulan ini.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-gray-400 italic">Tidak ada agenda tercatat untuk mapel ini.</td></tr>';
                 return;
             }
 
@@ -719,55 +726,51 @@
             });
         };
 
-        // Fungsi baru untuk ekspor Excel (CSV)
         window.exportAgendaExcel = () => {
             if (!currentAgendaData || currentAgendaData.length === 0) {
                 alert("Tampilkan riwayat agenda terlebih dahulu!");
                 return;
             }
-            
             const monthVal = document.getElementById('agenda-history-month').value;
             const kelas = currentClass;
-            
-            // Header CSV
-            let csv = "No,Tanggal,Kelas,Kegiatan/Agenda\n";
-            
-            // Body CSV
+            let csv = "No,Tanggal,Kelas,Mapel,GuruID,Kegiatan/Agenda\n";
             currentAgendaData.forEach((item, idx) => {
-                // Escape quotes in content
                 const safeActivity = (item.data.agenda_kegiatan || "").replace(/"/g, '""');
-                csv += `${idx + 1},"${item.date}","${kelas}","${safeActivity}"\n`;
+                // Added GuruID to export
+                const gId = item.data.guru_id || '-';
+                csv += `${idx + 1},"${item.date}","${kelas}","${currentGuruMapel}","${gId}","${safeActivity}"\n`;
             });
-
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.setAttribute("href", url);
-            link.setAttribute("download", `Agenda_Guru_${kelas}_${monthVal}.csv`);
+            link.setAttribute("download", `Agenda_${currentGuruMapel}_${kelas}_${monthVal}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         };
 
         window.editAgenda = (dateStr) => {
-            // Tutup modal
             document.getElementById('agenda-history-modal').classList.add('hidden');
-            
-            // Set date picker ke tanggal tersebut dan trigger change agar data ter-load di form utama
             const picker = document.getElementById('date-picker');
             picker.value = dateStr;
             picker.dispatchEvent(new Event('change'));
-            
-            // Scroll ke form agenda (optional, untuk UX lebih baik di mobile)
             document.getElementById('agenda-activity').scrollIntoView({ behavior: 'smooth' });
-            
-            // Highlight form
             setTimeout(() => document.getElementById('agenda-activity').focus(), 500);
         };
 
         function renderTable(attendanceData) {
             const container = document.getElementById('attendance-list');
             container.innerHTML = '';
+            
+            // Check if we are displaying legacy data to show a warning
+            if(currentLegacyData) {
+                const warningDiv = document.createElement('div');
+                warningDiv.className = "bg-yellow-100 text-yellow-800 p-2 text-xs text-center font-bold border-b border-yellow-200";
+                warningDiv.textContent = "⚠️ Menampilkan Data Lama. Lakukan perubahan untuk migrasi ke sistem baru.";
+                container.appendChild(warningDiv);
+            }
+
             studentsInClass.forEach((s, idx) => {
                 const record = attendanceData[s.id] || { status: '', time: '' };
                 const status = record.status.toLowerCase();
@@ -775,6 +778,7 @@
                 if(status === 'h') rowClass += " bg-green-50 dark:bg-green-900/10"; 
 
                 let proofBtn = '';
+                // Proof logic remains shared: student id + date
                 if ((status === 's' || status === 'i') && record.buktiAda) {
                     proofBtn = `<button onclick="window.viewProof('${s.id}', '${s.nama}', '${status}')" class="ml-2 text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full flex items-center gap-1 hover:bg-blue-200 transition"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>Lihat Bukti</button>`;
                 }
@@ -791,11 +795,23 @@
                         <button onclick="window.setStatus('${s.id}', 'a')" class="status-btn btn-a w-8 h-8 rounded border flex items-center justify-center text-sm ${status==='a'?'active':''}">A</button>
                     </div>
                 </div>`;
-                container.innerHTML += html;
+                container.insertAdjacentHTML('beforeend', html);
             });
         }
 
+        function updateSummary(attendanceData) {
+            let counts = { h: 0, s: 0, i: 0, a: 0 };
+            Object.values(attendanceData).forEach(v => { if(v.status && counts[v.status.toLowerCase()] !== undefined) counts[v.status.toLowerCase()]++; });
+            const totalFilled = counts.h + counts.s + counts.i + counts.a;
+            const notFilled = studentsInClass.length - totalFilled;
+            document.getElementById('count-h').textContent = counts.h;
+            document.getElementById('count-s').textContent = counts.s;
+            document.getElementById('count-i').textContent = counts.i;
+            document.getElementById('count-a').textContent = counts.a + notFilled;
+        }
+
         window.viewProof = async (studentId, studentName, status) => {
+            // NOTE: Proof ID remains SHARED (Student_Date)
             const proofId = `${studentId}_${currentDate}`;
             const modal = document.getElementById('proof-modal');
             const img = document.getElementById('proof-image');
@@ -821,17 +837,6 @@
             }
         };
 
-        function updateSummary(attendanceData) {
-            let counts = { h: 0, s: 0, i: 0, a: 0 };
-            Object.values(attendanceData).forEach(v => { if(v.status && counts[v.status.toLowerCase()] !== undefined) counts[v.status.toLowerCase()]++; });
-            const totalFilled = counts.h + counts.s + counts.i + counts.a;
-            const notFilled = studentsInClass.length - totalFilled;
-            document.getElementById('count-h').textContent = counts.h;
-            document.getElementById('count-s').textContent = counts.s;
-            document.getElementById('count-i').textContent = counts.i;
-            document.getElementById('count-a').textContent = counts.a + notFilled;
-        }
-
         window.toggleQrFullscreen = () => document.getElementById('qr-fullscreen').classList.toggle('active');
         window.toggleReportPanel = () => document.getElementById('report-panel').classList.toggle('hidden');
 
@@ -855,8 +860,19 @@
             const promises = [];
             for(let d=1; d<=daysInMonth; d++) {
                 const dateStr = `${monthVal}-${String(d).padStart(2, '0')}`;
-                const docId = `${kelas}_${dateStr}`;
-                promises.push(getDoc(doc(db, 'presensi', docId)).then(snap => ({ date: d, data: snap.exists() ? snap.data() : {} })));
+                // KEY CHANGE: ID Includes Mapel
+                const docId = `${kelas}_${currentGuruMapel}_${dateStr}`;
+                promises.push(getDoc(doc(db, 'presensi', docId)).then(async snap => {
+                    let data = snap.exists() ? snap.data() : {};
+                    // FALLBACK REPORT: Check legacy data if new data empty
+                    if(!snap.exists()) {
+                        try {
+                           const legSnap = await getDoc(doc(db, 'presensi', `${kelas}_${dateStr}`));
+                           if(legSnap.exists()) data = legSnap.data();
+                        } catch(e) {}
+                    }
+                    return { date: d, data };
+                }));
             }
             
             const results = await Promise.all(promises);
@@ -909,21 +925,24 @@
             });
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = `Presensi_${currentClass}_${monthVal}.csv`; a.click();
+            const a = document.createElement('a'); a.href = url; a.download = `Presensi_${currentGuruMapel}_${currentClass}_${monthVal}.csv`; a.click();
         };
 
         window.resetMonthlyData = async () => {
             const monthVal = document.getElementById('report-month').value;
             const kelas = currentClass;
             if(!kelas || !monthVal) return;
-            if(!confirm(`PERINGATAN: Hapus permanen data presensi kelas ${kelas} bulan ${monthVal}?`)) return;
+            if(!confirm(`PERINGATAN: Hapus permanen data presensi kelas ${kelas} bulan ${monthVal} untuk mapel ${currentGuruMapel}?`)) return;
 
             const [year, month] = monthVal.split('-');
             const daysInMonth = new Date(year, month, 0).getDate();
             const batchPromises = [];
             for(let d=1; d<=daysInMonth; d++) {
                 const dateStr = `${monthVal}-${String(d).padStart(2, '0')}`;
-                batchPromises.push(deleteDoc(doc(db, 'presensi', `${kelas}_${dateStr}`)));
+                // KEY CHANGE: Use setDoc to overwrite with empty data instead of deleteDoc
+                // This prevents "falling back" to the legacy mixed data
+                const docRef = doc(db, 'presensi', `${kelas}_${currentGuruMapel}_${dateStr}`);
+                batchPromises.push(setDoc(docRef, { mapel: currentGuruMapel }));
             }
             try { await Promise.all(batchPromises); alert("Data dikosongkan."); window.generateMonthlyReport(); } 
             catch(e) { alert("Gagal menghapus: " + e.message); }
@@ -931,34 +950,50 @@
 
         window.setStatus = async (studentId, status) => {
             if(!currentClass || !currentDate) return;
-            const docRef = doc(db, 'presensi', `${currentClass}_${currentDate}`);
+            // KEY CHANGE: ID Includes Mapel
+            const docRef = doc(db, 'presensi', `${currentClass}_${currentGuruMapel}_${currentDate}`);
             const time = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
             const updateData = {};
             if(status === '') updateData[studentId] = { status: '', time: '', method: 'manual' };
             else updateData[studentId] = { status: status, time: time, method: 'manual' };
             
-            // Added: mapel to help with data consistency
-            await setDoc(docRef, { 
+            let dataToSave = { 
                 ...updateData,
-                mapel: currentGuruMapel
-            }, { merge: true });
+                mapel: currentGuruMapel,
+                guru_id: currentGuruId
+            };
+
+            // MIGRATION LOGIC: Include legacy data if first write
+            if (currentLegacyData) {
+                dataToSave = { ...currentLegacyData, ...dataToSave };
+                currentLegacyData = null; // Clear flag
+            }
+
+            await setDoc(docRef, dataToSave, { merge: true });
         };
 
         window.bulkUpdateStatus = async (status) => {
             if(!currentClass || !currentDate) return;
-            const docRef = doc(db, 'presensi', `${currentClass}_${currentDate}`);
+            // KEY CHANGE: ID Includes Mapel
+            const docRef = doc(db, 'presensi', `${currentClass}_${currentGuruMapel}_${currentDate}`);
             const time = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
             const batchData = {};
             studentsInClass.forEach(s => { batchData[s.id] = { status: status, time: status ? time : '', method: 'manual' }; });
             
-            // Added: mapel to help with data consistency
-            await setDoc(docRef, { 
+            let dataToSave = { 
                 ...batchData,
-                mapel: currentGuruMapel
-            }, { merge: true });
-        };
+                mapel: currentGuruMapel,
+                guru_id: currentGuruId
+            };
 
-        // window.simulateStudentScan DELETED
+            // MIGRATION LOGIC: Include legacy data if first write
+            if (currentLegacyData) {
+                dataToSave = { ...currentLegacyData, ...dataToSave };
+                currentLegacyData = null; // Clear flag
+            }
+
+            await setDoc(docRef, dataToSave, { merge: true });
+        };
     </script>
 </body>
 </html>
