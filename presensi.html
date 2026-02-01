@@ -406,6 +406,13 @@
             return a.localeCompare(b);
         };
 
+        // --- TITLE CASE HELPER ---
+        function toTitleCase(str) {
+            return str.replace(/\w\S*/g, function(txt){
+                return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
@@ -418,7 +425,12 @@
                 const fallbackDiv = document.getElementById('login-fallback');
                 const headerUserId = document.getElementById('header-user-id');
 
-                const tokenMapel = localStorage.getItem('cbt_user_mapel');
+                let tokenMapel = localStorage.getItem('cbt_user_mapel');
+                // FORCE TITLE CASE FOR TEACHER MAPEL TO MATCH DB
+                if (tokenMapel) {
+                    tokenMapel = toTitleCase(tokenMapel);
+                }
+
                 currentGuruId = localStorage.getItem('cbt_user_id');
                 currentGuruMapel = tokenMapel;
                 
