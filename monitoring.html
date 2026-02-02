@@ -229,7 +229,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        // [FIXED] Menambahkan serverTimestamp ke dalam import
         import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, getDocs, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -251,6 +250,7 @@
         let currentGuruId = null;
         let currentGuruMapel = null;
         let allExamsCache = []; // Cache untuk data ujian
+        let currentExamDuration = 0; // Durasi ujian aktif
 
         // Init & Auth Check
         document.addEventListener('DOMContentLoaded', async () => {
@@ -283,6 +283,9 @@
                     fallback.classList.remove('hidden');
                 }
             });
+
+            // Start global timer update
+            startLiveTimerUpdate();
         });
 
         // Theme Toggle Logic
@@ -424,6 +427,10 @@
         function startMonitoring(examCode) {
             if(currentListener) currentListener();
             
+            // GET DURATION
+            const selectedExam = allExamsCache.find(e => e.kodeUjian === examCode);
+            currentExamDuration = selectedExam ? parseInt(selectedExam.durasiMenit || 60) : 0;
+
             document.getElementById('cards-container').innerHTML = '<div class="col-span-full text-center py-20 text-primary animate-pulse">Menghubungkan ke data live...</div>';
 
             const q = query(collection(db, 'hasil_ujian'), where('ujianId', '==', examCode));
@@ -461,9 +468,14 @@
                                     (s.status === 'suspended' ? 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-400/10 border-red-200 dark:border-red-400/20' : 
                                     'text-sky-600 dark:text-sky-400 bg-sky-100 dark:bg-sky-400/10 border-sky-200 dark:border-sky-400/20');
                 
-                const statusText = s.status === 'selesai' ? 'SELESAI' : 
-                                   (s.status === 'suspended' ? 'SUSPENDED' : 
-                                   (isOnline ? 'MENGERJAKAN' : 'OFFLINE'));
+                let statusContent = s.status === 'selesai' ? 'SELESAI' : (s.status === 'suspended' ? 'SUSPENDED' : (isOnline ? 'MENGERJAKAN' : 'OFFLINE'));
+
+                // TIMER LOGIC IN STATUS
+                if (s.status === 'mengerjakan' && s.mulaiPada && currentExamDuration > 0) {
+                    const endTime = s.mulaiPada.toMillis() + (currentExamDuration * 60000);
+                    // Add attribute for global timer update
+                    statusContent = `<div class="flex items-center gap-2"><span>MENGERJAKAN</span><span class="live-timer font-mono bg-white/20 px-1 rounded" data-endtime="${endTime}">...</span></div>`;
+                }
 
                 // Badge pelanggaran
                 let violationBadge = '';
@@ -520,13 +532,36 @@
 
                     <div class="relative z-10 flex items-center justify-between mt-auto pt-4 border-t border-slate-100 dark:border-white/5">
                         <div class="px-2.5 py-1 rounded border text-[10px] font-bold uppercase tracking-wide ${statusColor}">
-                            ${statusText}
+                            ${statusContent}
                         </div>
                         ${violationBadge}
                     </div>
                 `;
                 container.appendChild(card);
             });
+        }
+
+        // GLOBAL TIMER UPDATE FUNCTION
+        function startLiveTimerUpdate() {
+            setInterval(() => {
+                const now = Date.now();
+                document.querySelectorAll('.live-timer').forEach(el => {
+                    const end = parseInt(el.getAttribute('data-endtime'));
+                    if (isNaN(end)) return;
+
+                    const diff = end - now;
+                    
+                    if (diff <= 0) {
+                        el.textContent = "Waktu Habis";
+                        el.classList.add('text-red-500');
+                    } else {
+                        const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
+                        const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+                        const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+                        el.textContent = `${h}:${m}:${s}`;
+                    }
+                });
+            }, 1000);
         }
 
         function updateStats(students) {
