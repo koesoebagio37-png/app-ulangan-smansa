@@ -381,21 +381,32 @@
             appId: "1:409085062439:web:280589d1a3e12e7b980d02",
         };
 
-        let db, auth;
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // --- PATH INTEGRASI GLOBAL ---
+        const PATH_IZIN_GLOBAL = 'artifacts/presensi-sekolah-terintegrasi/public/data/izin_global';
+
         let currentUnsubscribe = null;
+        let globalUnsubscribe = null; // LISTENER BARU UNTUK PIKET
         let studentsInClass = [];
         let currentClass = '';
         let currentDate = '';
         let currentReportData = null; 
         let currentAgendaData = []; 
-        let currentLegacyData = null; // New for fallback mechanism
+        let currentLegacyData = null; 
+        
+        // --- DATA STORAGE ---
+        let currentLocalData = {}; // Menyimpan data presensi mapel
+        let currentGlobalData = {}; // Menyimpan data dari piket (izin global)
         
         let currentScale = 1;
         let startX, startY, translateX=0, translateY=0;
         
-        // --- GLOBAL IDENTITY VARS (INTEGRATION) ---
+        // --- GLOBAL IDENTITY VARS ---
         let currentGuruId = null;
-        let currentGuruMapel = null; // KEY VARIABLE
+        let currentGuruMapel = null; 
         let guruKelasList = []; 
 
         const sortKelasRomawi = (a, b) => {
@@ -406,7 +417,6 @@
             return a.localeCompare(b);
         };
 
-        // --- TITLE CASE HELPER ---
         function toTitleCase(str) {
             return str.replace(/\w\S*/g, function(txt){
                 return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
@@ -414,10 +424,6 @@
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
-            const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-
             onAuthStateChanged(auth, (user) => {
                 const overlay = document.getElementById('login-overlay');
                 const logoutBtn = document.getElementById('logout-btn');
@@ -426,7 +432,6 @@
                 const headerUserId = document.getElementById('header-user-id');
 
                 let tokenMapel = localStorage.getItem('cbt_user_mapel');
-                // FORCE TITLE CASE FOR TEACHER MAPEL TO MATCH DB
                 if (tokenMapel) {
                     tokenMapel = toTitleCase(tokenMapel);
                 }
@@ -434,7 +439,6 @@
                 currentGuruId = localStorage.getItem('cbt_user_id');
                 currentGuruMapel = tokenMapel;
                 
-                // Set UI Titles based on Mapel
                 if(currentGuruMapel) {
                     document.getElementById('report-mapel-title').textContent = currentGuruMapel;
                     document.getElementById('journal-mapel-title').textContent = currentGuruMapel;
@@ -562,7 +566,6 @@
             document.getElementById('report-class-display').value = kelas || '-';
             if(!kelas || !tanggal) return;
 
-            // SAFETY CHECK: Ensure mapel is loaded
             if(!currentGuruMapel) {
                 alert("Identitas Mata Pelajaran tidak ditemukan. Silakan Login ulang dari Portal.");
                 return;
@@ -588,51 +591,146 @@
             document.getElementById('token-display').textContent = token;
             document.getElementById('token-display-full').textContent = token;
             
-            // NOTE: QR Data now includes 'm' (mapel) to verify students are scanning correct subject
             const qrData = JSON.stringify({ c: currentClass, d: currentDate, t: token, m: currentGuruMapel });
             const url = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(qrData)}`;
             document.getElementById('qr-image').src = url;
             document.getElementById('qr-image-full').src = url;
         }
 
+        // --- FUNGSI UTAMA YANG DIMODIFIKASI ---
         function setupRealtimeListener(kelas, tanggal) {
+            // Bersihkan listener lama agar tidak dobel
             if(currentUnsubscribe) currentUnsubscribe();
+            if(globalUnsubscribe) globalUnsubscribe();
             
-            // KEY CHANGE: Unique Document ID per Mapel
             const docId = `${kelas}_${currentGuruMapel}_${tanggal}`;
             const docRef = doc(db, 'presensi', docId);
             
             document.getElementById('agenda-activity').value = "";
-            currentLegacyData = null; // Reset legacy data tracker
+            currentLegacyData = null; 
+            currentLocalData = {}; // Reset lokal
+            currentGlobalData = {}; // Reset global
 
+            // 1. LISTENER DATA LOKAL (Presensi Mapel Ini)
             currentUnsubscribe = onSnapshot(docRef, async (docSnap) => {
-                let attendanceData = {};
-                
                 if (docSnap.exists()) {
-                    attendanceData = docSnap.data();
-                    currentLegacyData = null; // Data exists in new path, so no need for legacy
+                    currentLocalData = docSnap.data();
+                    currentLegacyData = null; 
                 } else {
-                    // FALLBACK: Try check legacy path (Kelas_Tanggal) if new path is empty
-                    // This handles migration view (viewing old data in new system)
+                    // Fallback cek legacy data
                     const legacyId = `${kelas}_${tanggal}`;
                     try {
                         const legacySnap = await getDoc(doc(db, 'presensi', legacyId));
                         if(legacySnap.exists()) {
-                            attendanceData = legacySnap.data();
-                            currentLegacyData = attendanceData; // Mark as legacy so we can migrate on save
-                            console.log("Legacy data loaded for viewing");
+                            currentLocalData = legacySnap.data();
+                            currentLegacyData = currentLocalData; 
                         }
                     } catch(e) { console.log("No legacy data found"); }
                 }
 
-                renderTable(attendanceData);
-                updateSummary(attendanceData);
+                // Render tabel gabungan
+                renderTable();     
+                updateSummary();   
                 
-                const agendaText = attendanceData.agenda_kegiatan || "";
+                const agendaText = currentLocalData.agenda_kegiatan || "";
                 const agendaInput = document.getElementById('agenda-activity');
                 if (agendaInput.value !== agendaText && document.activeElement !== agendaInput) {
                     agendaInput.value = agendaText;
                 }
+            });
+
+            // 2. LISTENER DATA GLOBAL (Piket - Izin Global)
+            const qGlobal = query(
+                collection(db, PATH_IZIN_GLOBAL),
+                where('kelas', '==', kelas)
+            );
+
+            globalUnsubscribe = onSnapshot(qGlobal, (snap) => {
+                currentGlobalData = {};
+                snap.forEach(d => {
+                    // ID dokumen di izin_global formatnya: YYYY-MM-DD_NIS
+                    // Kita cek apakah ID dimulai dengan tanggal yang dipilih
+                    if(d.id.startsWith(tanggal)) {
+                        const data = d.data();
+                        currentGlobalData[data.nis] = data; // Simpan dengan Key NIS
+                    }
+                });
+                renderTable(); // Render ulang saat ada update dari piket
+            });
+        }
+
+        // --- FUNGSI RENDER TABEL YANG DIGABUNG ---
+        function renderTable() {
+            const container = document.getElementById('attendance-list');
+            container.innerHTML = '';
+            
+            if(currentLegacyData) {
+                const warningDiv = document.createElement('div');
+                warningDiv.className = "bg-yellow-100 text-yellow-800 p-2 text-xs text-center font-bold border-b border-yellow-200";
+                warningDiv.textContent = "⚠️ Menampilkan Data Lama. Lakukan perubahan untuk migrasi ke sistem baru.";
+                container.appendChild(warningDiv);
+            }
+
+            studentsInClass.forEach((s, idx) => {
+                // Ambil data lokal dulu
+                let record = currentLocalData[s.id] || { status: '', time: '' };
+                let isFromPiket = false;
+
+                // LOGIKA PENGGABUNGAN:
+                // Jika status lokal KOSONG, cek data global (Piket)
+                if (!record.status) {
+                    const globalRecord = currentGlobalData[s.id];
+                    if (globalRecord) {
+                        record = {
+                            status: globalRecord.tipe, // 's' atau 'i' dari piket
+                            time: 'Piket',
+                            method: 'auto',
+                            buktiAda: (globalRecord.foto ? true : false) // Cek foto dari piket
+                        };
+                        isFromPiket = true;
+                    }
+                }
+
+                const status = (record.status || '').toLowerCase();
+                let rowClass = "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors";
+                if(status === 'h') rowClass += " bg-green-50 dark:bg-green-900/10";
+                if(isFromPiket) rowClass += " bg-indigo-50 dark:bg-indigo-900/20"; // Highlight ungu jika dari piket
+
+                let proofBtn = '';
+                // Logic tombol bukti (Cek juga bukti global)
+                if ((status === 's' || status === 'i')) {
+                    // Jika ada bukti lokal ATAU bukti dari piket (isFromPiket)
+                    if (record.buktiAda || isFromPiket) {
+                         const isGlobalStr = isFromPiket ? 'true' : 'false';
+                         proofBtn = `<button onclick="window.viewProof('${s.id}', '${s.nama}', '${status}', ${isGlobalStr})" class="ml-2 text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full flex items-center gap-1 hover:bg-blue-200 transition"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>Lihat Bukti</button>`;
+                    }
+                }
+                
+                let waBtn = '';
+                if (['s', 'i', 'a'].includes(status)) {
+                    waBtn = `<button onclick="window.sendWA('${s.id}', '${status}')" class="ml-2 text-xs bg-green-500 hover:bg-green-600 text-white p-1 rounded-full flex items-center gap-1 shadow transition" title="Lapor WA ke Ortu">
+                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                    </button>`;
+                }
+
+                // Badge "VIA PIKET"
+                const sourceBadge = isFromPiket 
+                    ? '<span class="text-[10px] bg-indigo-100 text-indigo-700 px-1 rounded border border-indigo-200 ml-1 font-bold">PIKET</span>' 
+                    : '';
+
+                const html = `
+                <div class="grid grid-cols-12 gap-2 px-4 py-3 items-center ${rowClass}">
+                    <div class="col-span-1 text-center text-gray-500 text-sm">${idx + 1}</div>
+                    <div class="col-span-5 font-medium text-gray-800 dark:text-white flex items-center gap-2 flex-wrap">${s.nama} ${status === 'h' && record.method === 'qr' ? '<span class="text-[10px] bg-pink-100 text-pink-600 px-1 rounded border border-pink-200">QR</span>' : ''} ${sourceBadge} ${proofBtn} ${waBtn}</div>
+                    <div class="col-span-2 text-center text-xs text-gray-500 font-mono">${record.time || '-'}</div>
+                    <div class="col-span-4 flex justify-center gap-1">
+                        <button onclick="window.setStatus('${s.id}', 'h')" class="status-btn btn-h w-8 h-8 rounded border flex items-center justify-center text-sm ${status==='h'?'active':''}">H</button>
+                        <button onclick="window.setStatus('${s.id}', 's')" class="status-btn btn-s w-8 h-8 rounded border flex items-center justify-center text-sm ${status==='s'?'active':''}">S</button>
+                        <button onclick="window.setStatus('${s.id}', 'i')" class="status-btn btn-i w-8 h-8 rounded border flex items-center justify-center text-sm ${status==='i'?'active':''}">I</button>
+                        <button onclick="window.setStatus('${s.id}', 'a')" class="status-btn btn-a w-8 h-8 rounded border flex items-center justify-center text-sm ${status==='a'?'active':''}">A</button>
+                    </div>
+                </div>`;
+                container.insertAdjacentHTML('beforeend', html);
             });
         }
 
@@ -646,7 +744,6 @@
 
             try {
                 const activity = document.getElementById('agenda-activity').value;
-                // KEY CHANGE: ID Includes Mapel
                 const docRef = doc(db, 'presensi', `${currentClass}_${currentGuruMapel}_${currentDate}`);
                 
                 let dataToSave = { 
@@ -655,15 +752,11 @@
                     guru_id: currentGuruId
                 };
 
-                // MIGRATION LOGIC: If we are viewing legacy data, include it in the save to migrate it
                 if (currentLegacyData) {
                     dataToSave = { ...currentLegacyData, ...dataToSave };
                 }
                 
-                // UPDATE: Also save Guru ID to track WHO submitted it
                 await setDoc(docRef, dataToSave, { merge: true });
-                
-                // Clear legacy flag as now data exists in new path
                 currentLegacyData = null; 
                 
                 const msg = document.getElementById('agenda-status-msg');
@@ -704,7 +797,6 @@
             const promises = [];
             for(let d=1; d<=daysInMonth; d++) {
                 const dateStr = `${monthVal}-${String(d).padStart(2, '0')}`;
-                // KEY CHANGE: ID Includes Mapel
                 const docId = `${kelas}_${currentGuruMapel}_${dateStr}`;
                 promises.push(getDoc(doc(db, 'presensi', docId)).then(snap => ({ 
                     date: dateStr, 
@@ -748,7 +840,6 @@
             let csv = "No,Tanggal,Kelas,Mapel,GuruID,Kegiatan/Agenda\n";
             currentAgendaData.forEach((item, idx) => {
                 const safeActivity = (item.data.agenda_kegiatan || "").replace(/"/g, '""');
-                // Added GuruID to export
                 const gId = item.data.guru_id || '-';
                 csv += `${idx + 1},"${item.date}","${kelas}","${currentGuruMapel}","${gId}","${safeActivity}"\n`;
             });
@@ -771,64 +862,11 @@
             setTimeout(() => document.getElementById('agenda-activity').focus(), 500);
         };
 
-        function renderTable(attendanceData) {
-            const container = document.getElementById('attendance-list');
-            container.innerHTML = '';
-            
-            // Check if we are displaying legacy data to show a warning
-            if(currentLegacyData) {
-                const warningDiv = document.createElement('div');
-                warningDiv.className = "bg-yellow-100 text-yellow-800 p-2 text-xs text-center font-bold border-b border-yellow-200";
-                warningDiv.textContent = "⚠️ Menampilkan Data Lama. Lakukan perubahan untuk migrasi ke sistem baru.";
-                container.appendChild(warningDiv);
-            }
-
-            studentsInClass.forEach((s, idx) => {
-                const record = attendanceData[s.id] || { status: '', time: '' };
-                const status = record.status.toLowerCase();
-                let rowClass = "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors";
-                if(status === 'h') rowClass += " bg-green-50 dark:bg-green-900/10"; 
-
-                let proofBtn = '';
-                // Proof logic remains shared: student id + date
-                if ((status === 's' || status === 'i') && record.buktiAda) {
-                    proofBtn = `<button onclick="window.viewProof('${s.id}', '${s.nama}', '${status}')" class="ml-2 text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full flex items-center gap-1 hover:bg-blue-200 transition"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>Lihat Bukti</button>`;
-                }
-                
-                // FITUR BARU: TOMBOL WA
-                // Hanya muncul jika status Sakit, Izin, atau Alpha
-                let waBtn = '';
-                if (['s', 'i', 'a'].includes(status)) {
-                    waBtn = `<button onclick="window.sendWA('${s.id}', '${status}')" class="ml-2 text-xs bg-green-500 hover:bg-green-600 text-white p-1 rounded-full flex items-center gap-1 shadow transition" title="Lapor WA ke Ortu">
-                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                    </button>`;
-                }
-
-                const html = `
-                <div class="grid grid-cols-12 gap-2 px-4 py-3 items-center ${rowClass}">
-                    <div class="col-span-1 text-center text-gray-500 text-sm">${idx + 1}</div>
-                    <div class="col-span-5 font-medium text-gray-800 dark:text-white flex items-center gap-2 flex-wrap">${s.nama} ${status === 'h' && record.method === 'qr' ? '<span class="text-[10px] bg-pink-100 text-pink-600 px-1 rounded border border-pink-200">QR</span>' : ''} ${proofBtn} ${waBtn}</div>
-                    <div class="col-span-2 text-center text-xs text-gray-500 font-mono">${record.time || '-'}</div>
-                    <div class="col-span-4 flex justify-center gap-1">
-                        <button onclick="window.setStatus('${s.id}', 'h')" class="status-btn btn-h w-8 h-8 rounded border flex items-center justify-center text-sm ${status==='h'?'active':''}">H</button>
-                        <button onclick="window.setStatus('${s.id}', 's')" class="status-btn btn-s w-8 h-8 rounded border flex items-center justify-center text-sm ${status==='s'?'active':''}">S</button>
-                        <button onclick="window.setStatus('${s.id}', 'i')" class="status-btn btn-i w-8 h-8 rounded border flex items-center justify-center text-sm ${status==='i'?'active':''}">I</button>
-                        <button onclick="window.setStatus('${s.id}', 'a')" class="status-btn btn-a w-8 h-8 rounded border flex items-center justify-center text-sm ${status==='a'?'active':''}">A</button>
-                    </div>
-                </div>`;
-                container.insertAdjacentHTML('beforeend', html);
-            });
-        }
-        
-        // --- FUNGSI BARU UNTUK KIRIM WA ---
         window.sendWA = (studentId, status) => {
             const student = studentsInClass.find(s => s.id === studentId);
             if (!student) return;
 
-            // Coba ambil nomor HP dari berbagai field kemungkinan
             let phone = student.hp_ortu || student.no_hp || student.wa || "";
-            
-            // Bersihkan nomor (hilangkan spasi, strip, dll)
             phone = phone.replace(/\D/g, '');
 
             if (!phone) {
@@ -836,7 +874,6 @@
                 return;
             }
 
-            // Ubah 08xxx menjadi 628xxx
             if (phone.startsWith('0')) {
                 phone = '62' + phone.slice(1);
             }
@@ -845,17 +882,30 @@
             const mapel = currentGuruMapel || "Pelajaran";
             const tgl = currentDate;
 
-            // Template Pesan yang Sopan (UPDATED)
             const message = `Yth. Wali Murid dari ${student.nama}.\n\nDiberitahukan bahwa siswa tersebut *TIDAK MENGIKUTI* pelajaran *${mapel}* pada tanggal ${tgl} dikarenakan status: *${statusText}*.\n\nAbaikan pesan ini jika hal tersebut di atas sepengetahuan Bpk/Ibu. Tetapi jika tidak, mohon segera hubungi anak Bpk/Ibu untuk memastikan keberadaannya.\n\nTerima kasih atas perhatian dan kerjasamanya.`;
 
             const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
             window.open(url, '_blank');
         };
-        // ----------------------------------
 
-        function updateSummary(attendanceData) {
+        function updateSummary() {
+            // Hitung statistik dari tabel yang sudah dirender (gabungan)
             let counts = { h: 0, s: 0, i: 0, a: 0 };
-            Object.values(attendanceData).forEach(v => { if(v.status && counts[v.status.toLowerCase()] !== undefined) counts[v.status.toLowerCase()]++; });
+            
+            studentsInClass.forEach(s => {
+                let status = '';
+                const local = currentLocalData[s.id];
+                const global = currentGlobalData[s.id];
+                
+                if (local && local.status) {
+                    status = local.status.toLowerCase();
+                } else if (global) {
+                    status = global.tipe.toLowerCase();
+                }
+                
+                if(status && counts[status] !== undefined) counts[status]++;
+            });
+
             const totalFilled = counts.h + counts.s + counts.i + counts.a;
             const notFilled = studentsInClass.length - totalFilled;
             document.getElementById('count-h').textContent = counts.h;
@@ -864,9 +914,7 @@
             document.getElementById('count-a').textContent = counts.a + notFilled;
         }
 
-        window.viewProof = async (studentId, studentName, status) => {
-            // NOTE: Proof ID remains SHARED (Student_Date)
-            const proofId = `${studentId}_${currentDate}`;
+        window.viewProof = async (studentId, studentName, status, isGlobal = false) => {
             const modal = document.getElementById('proof-modal');
             const img = document.getElementById('proof-image');
             img.src = ""; 
@@ -877,13 +925,26 @@
             document.getElementById('proof-date').textContent = currentDate;
 
             try {
-                const docSnap = await getDoc(doc(db, 'bukti_izin', proofId));
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    img.src = data.foto || 'https://via.placeholder.com/400x300?text=Foto+Tidak+Ada';
-                    document.getElementById('proof-reason').textContent = data.alasan || '-';
+                if (isGlobal) {
+                    // AMBIL DARI MEMORI PIKET (Lebih Cepat)
+                    const globalData = currentGlobalData[studentId];
+                    if (globalData) {
+                        img.src = globalData.foto || 'https://via.placeholder.com/400x300?text=Foto+Tidak+Ada';
+                        document.getElementById('proof-reason').textContent = (globalData.alasan || '-') + " (Verifikasi Piket)";
+                    } else {
+                        document.getElementById('proof-reason').textContent = "Data tidak ditemukan.";
+                    }
                 } else {
-                    document.getElementById('proof-reason').textContent = "Data bukti tidak ditemukan di server.";
+                    // AMBIL DARI DATABASE MAPEL (Lama)
+                    const proofId = `${studentId}_${currentDate}`;
+                    const docSnap = await getDoc(doc(db, 'bukti_izin', proofId));
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        img.src = data.foto || 'https://via.placeholder.com/400x300?text=Foto+Tidak+Ada';
+                        document.getElementById('proof-reason').textContent = data.alasan || '-';
+                    } else {
+                        document.getElementById('proof-reason').textContent = "Data bukti tidak ditemukan di server.";
+                    }
                 }
             } catch (e) {
                 alert("Gagal memuat bukti: " + e.message);
@@ -914,11 +975,10 @@
             const promises = [];
             for(let d=1; d<=daysInMonth; d++) {
                 const dateStr = `${monthVal}-${String(d).padStart(2, '0')}`;
-                // KEY CHANGE: ID Includes Mapel
                 const docId = `${kelas}_${currentGuruMapel}_${dateStr}`;
                 promises.push(getDoc(doc(db, 'presensi', docId)).then(async snap => {
                     let data = snap.exists() ? snap.data() : {};
-                    // FALLBACK REPORT: Check legacy data if new data empty
+                    // Cek legacy jika kosong
                     if(!snap.exists()) {
                         try {
                            const legSnap = await getDoc(doc(db, 'presensi', `${kelas}_${dateStr}`));
@@ -993,8 +1053,6 @@
             const batchPromises = [];
             for(let d=1; d<=daysInMonth; d++) {
                 const dateStr = `${monthVal}-${String(d).padStart(2, '0')}`;
-                // KEY CHANGE: Use setDoc to overwrite with empty data instead of deleteDoc
-                // This prevents "falling back" to the legacy mixed data
                 const docRef = doc(db, 'presensi', `${kelas}_${currentGuruMapel}_${dateStr}`);
                 batchPromises.push(setDoc(docRef, { mapel: currentGuruMapel }));
             }
@@ -1004,7 +1062,6 @@
 
         window.setStatus = async (studentId, status) => {
             if(!currentClass || !currentDate) return;
-            // KEY CHANGE: ID Includes Mapel
             const docRef = doc(db, 'presensi', `${currentClass}_${currentGuruMapel}_${currentDate}`);
             const time = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
             const updateData = {};
@@ -1017,10 +1074,9 @@
                 guru_id: currentGuruId
             };
 
-            // MIGRATION LOGIC: Include legacy data if first write
             if (currentLegacyData) {
                 dataToSave = { ...currentLegacyData, ...dataToSave };
-                currentLegacyData = null; // Clear flag
+                currentLegacyData = null; 
             }
 
             await setDoc(docRef, dataToSave, { merge: true });
@@ -1028,7 +1084,6 @@
 
         window.bulkUpdateStatus = async (status) => {
             if(!currentClass || !currentDate) return;
-            // KEY CHANGE: ID Includes Mapel
             const docRef = doc(db, 'presensi', `${currentClass}_${currentGuruMapel}_${currentDate}`);
             const time = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
             const batchData = {};
@@ -1040,10 +1095,9 @@
                 guru_id: currentGuruId
             };
 
-            // MIGRATION LOGIC: Include legacy data if first write
             if (currentLegacyData) {
                 dataToSave = { ...currentLegacyData, ...dataToSave };
-                currentLegacyData = null; // Clear flag
+                currentLegacyData = null; 
             }
 
             await setDoc(docRef, dataToSave, { merge: true });
