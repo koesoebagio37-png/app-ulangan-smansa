@@ -138,7 +138,7 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-4">
-                    <!-- NEW: Filter Kelas -->
+                    <!-- Filter Kelas -->
                     <select id="filter-kelas" class="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5 w-32 md:w-40 transition-colors hidden md:block">
                         <option value="">Semua Kelas</option>
                     </select>
@@ -165,7 +165,7 @@
 
     <!-- STATS BAR -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
             <div class="glass-panel p-4 rounded-2xl">
                 <p class="text-slate-500 dark:text-slate-400 text-xs uppercase font-bold tracking-wider">Total Peserta</p>
                 <p id="stat-total" class="text-2xl font-bold text-slate-800 dark:text-white mt-1">0</p>
@@ -182,6 +182,15 @@
                 <p class="text-red-600 dark:text-red-400 text-xs uppercase font-bold tracking-wider">Terdeteksi Curang</p>
                 <p id="stat-cheat" class="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">0</p>
             </div>
+        </div>
+        
+        <!-- NEW: MASSIVE ACTION BAR -->
+        <div id="mass-action-container" class="hidden">
+            <button onclick="forceFinishAll()" id="btn-force-all" class="w-full md:w-auto px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-600/20 transition-all flex items-center justify-center gap-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span>PAKSA SELESAI SEMUA (<span id="active-count-btn">0</span> PESERTA)</span>
+            </button>
+            <p class="text-xs text-slate-500 mt-2 ml-1">*Hanya peserta yang statusnya "Mengerjakan" yang akan diselesaikan.</p>
         </div>
     </div>
 
@@ -212,7 +221,7 @@
                 </button>
                 <button onclick="performAction('suspend')" class="w-full p-3 bg-red-100 dark:bg-red-600/20 hover:bg-red-200 dark:hover:bg-red-600/30 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-600/50 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
-                    Diskualifikasi (Suspend)
+                    Diskualifikasi (Suspend) & Nilai 0
                 </button>
                  <button onclick="performAction('delete')" class="w-full p-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -229,7 +238,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, getDocs, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, getDocs, orderBy, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAwIwimlyrE4qQqYa2gA8Pfygd59USsveQ",
@@ -251,6 +260,7 @@
         let currentGuruMapel = null;
         let allExamsCache = []; // Cache untuk data ujian
         let currentExamDuration = 0; // Durasi ujian aktif
+        let currentActiveStudents = []; // NEW: Untuk simpan data siswa yang sedang mengerjakan
 
         // Init & Auth Check
         document.addEventListener('DOMContentLoaded', async () => {
@@ -421,6 +431,7 @@
         function stopMonitoring() {
             if(currentListener) currentListener();
             document.getElementById('cards-container').innerHTML = '<div class="col-span-full text-center py-20 text-slate-500 dark:text-slate-400">Pilih kode ujian untuk memulai.</div>';
+            document.getElementById('mass-action-container').classList.add('hidden'); // Hide bulk btn
             resetStats();
         }
 
@@ -441,9 +452,21 @@
                 
                 // Sort: Yang curang & aktif di atas
                 students.sort((a, b) => {
+                    // Prioritas: Suspended/Pelanggaran > Selesai > Mengerjakan
+                    const statusRank = { 'suspended': 3, 'selesai': 2, 'mengerjakan': 1 };
+                    const rankA = statusRank[a.status] || 0;
+                    const rankB = statusRank[b.status] || 0;
+
+                    if (a.status === 'suspended' || b.status === 'suspended') {
+                         return rankB - rankA; // Suspended paling atas
+                    }
                     if (b.pelanggaran !== a.pelanggaran) return b.pelanggaran - a.pelanggaran;
                     return b.skor - a.skor;
                 });
+
+                // Filter siswa yang statusnya 'mengerjakan' untuk tombol mass action
+                currentActiveStudents = students.filter(s => s.status === 'mengerjakan');
+                updateMassActionButton();
 
                 renderCards(students);
                 updateStats(students);
@@ -451,6 +474,51 @@
                 console.error("Error monitoring:", error);
                 document.getElementById('cards-container').innerHTML = `<div class="col-span-full text-center py-20 text-red-400">Error: ${error.message}</div>`;
             });
+        }
+
+        // NEW: Update tombol massal visibility
+        function updateMassActionButton() {
+            const btnContainer = document.getElementById('mass-action-container');
+            const btnCount = document.getElementById('active-count-btn');
+            
+            if (currentActiveStudents.length > 0) {
+                btnContainer.classList.remove('hidden');
+                btnCount.textContent = currentActiveStudents.length;
+            } else {
+                btnContainer.classList.add('hidden');
+            }
+        }
+
+        // NEW: Fungsi Massal Paksa Selesai
+        window.forceFinishAll = async () => {
+            if (currentActiveStudents.length === 0) return;
+            
+            const count = currentActiveStudents.length;
+            const confirmMsg = `PERINGATAN KERAS!\n\nAnda akan memaksa SELESAI untuk ${count} peserta yang sedang aktif.\n\nMereka tidak akan bisa mengerjakan soal lagi.\nApakah Anda yakin ingin melanjutkan?`;
+            
+            if (confirm(confirmMsg)) {
+                if (confirm(`Konfirmasi Terakhir: Yakin selesaikan ${count} peserta sekarang?`)) {
+                    
+                    try {
+                        // Gunakan Batch untuk efisiensi
+                        const batch = writeBatch(db);
+                        
+                        currentActiveStudents.forEach(student => {
+                            const ref = doc(db, 'hasil_ujian', student.id);
+                            batch.update(ref, { 
+                                status: 'selesai', 
+                                selesaiPada: serverTimestamp() 
+                            });
+                        });
+                        
+                        await batch.commit();
+                        alert("Berhasil! Semua peserta aktif telah diselesaikan.");
+                        
+                    } catch (e) {
+                        alert("Gagal melakukan aksi massal: " + e.message);
+                    }
+                }
+            }
         }
 
         function renderCards(students) {
@@ -600,18 +668,20 @@
                 if(action === 'reset_cheat') {
                     if(confirm("Yakin reset pelanggaran siswa ini?")) {
                         await updateDoc(ref, { pelanggaran: 0 }); // Reset ke 0
-                        // Opsional: Jika ingin memberi "1 nyawa" lagi tapi tetap mencatat sejarah, logika backend harus diubah.
-                        // Di sini kita reset counter agar siswa bisa lanjut ujian jika kena limit.
                         alert("Pelanggaran direset. Siswa bisa masuk kembali.");
                     }
                 } else if(action === 'force_finish') {
                     if(confirm("Paksa selesaikan ujian siswa ini?")) {
-                        // [FIXED] Menggunakan serverTimestamp dengan benar
+                        // Menggunakan serverTimestamp dengan benar
                         await updateDoc(ref, { status: 'selesai', selesaiPada: serverTimestamp() });
                     }
                 } else if(action === 'suspend') {
                     if(confirm("Diskualifikasi siswa ini?")) {
-                        await updateDoc(ref, { status: 'suspended' });
+                        // MODIFIKASI: Ubah status jadi suspended DAN ubah skor jadi 0 sesuai permintaan
+                        await updateDoc(ref, { 
+                            status: 'suspended', 
+                            skor: 0
+                        });
                     }
                 } else if(action === 'delete') {
                     if(confirm("HAPUS DATA PERMANEN? Siswa harus mulai dari awal.")) {
