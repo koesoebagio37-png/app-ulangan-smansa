@@ -21,6 +21,12 @@
         }
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FIREBASE COMPAT SDK (Disamakan dengan aplikasi lain) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+
     <style>
         body { font-family: 'Inter', sans-serif; }
         .glass-card {
@@ -32,15 +38,51 @@
             background: rgba(30, 41, 59, 0.7);
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
-        .app-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .app-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden; }
         .app-card:hover { transform: translateY(-5px); }
         .app-icon-box { transition: all 0.3s ease; }
         .app-card:hover .app-icon-box { transform: scale(1.1) rotate(5deg); }
+
+        /* Styles untuk Aplikasi Terkunci (RBAC) */
+        .app-locked {
+            filter: grayscale(100%);
+            opacity: 0.6;
+            cursor: not-allowed !important;
+            pointer-events: none; /* Mencegah klik */
+        }
+        .app-locked::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0.3);
+            z-index: 10;
+        }
+        .dark .app-locked::after {
+            background: rgba(0,0,0,0.5);
+        }
+        .lock-badge {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 20;
+            background: #ef4444;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 99px;
+            font-size: 11px;
+            font-weight: bold;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 dark:bg-cyber-900 dark:text-white min-h-screen flex flex-col transition-colors duration-500">
 
-    <!-- LOGIN OVERLAY (UPDATED LOGIC: ID & PIN) -->
+    <!-- LOGIN OVERLAY -->
     <div id="dashboard-login-overlay" class="fixed inset-0 z-[100] bg-gray-100 dark:bg-cyber-900 flex items-center justify-center p-4">
         <div class="bg-white dark:bg-cyber-800 p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200 dark:border-emerald-900 relative overflow-hidden">
             <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
@@ -52,7 +94,7 @@
             </div>
 
             <form id="dashboard-login-form" class="space-y-5">
-                <!-- ID Pengguna (Ganti dari Select Mapel) -->
+                <!-- ID Pengguna -->
                 <div>
                     <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-1">ID Pengguna (Username)</label>
                     <input type="text" id="login-id" class="w-full p-3 pl-4 rounded-xl border bg-gray-50 dark:bg-cyber-900 dark:border-gray-700 text-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-mono text-center text-lg placeholder-gray-400" placeholder="Contoh: budi123" required autocomplete="off">
@@ -76,7 +118,7 @@
         </div>
     </div>
 
-    <!-- MODAL PILIH MAPEL (JIKA MULTI MAPEL) -->
+    <!-- MODAL PILIH MAPEL -->
     <div id="mapel-selector-modal" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
         <div class="bg-white dark:bg-cyber-800 w-full max-w-sm rounded-2xl p-6 shadow-2xl border border-gray-200 dark:border-gray-700">
             <h3 class="text-lg font-bold text-center mb-2 dark:text-white">Pilih Mapel Aktif</h3>
@@ -132,7 +174,6 @@
         </div>
 
         <!-- Live Stats Row (Connected to Firebase) -->
-        <!-- UPDATED: Removed Stat 3 (Siswa) and changed grid cols to 2 -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Stat 1 -->
             <div class="glass-card p-6 rounded-2xl shadow-sm flex items-center gap-4">
@@ -171,7 +212,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 
                 <!-- 1. Editor Soal -->
-                <a href="editor.html" target="_blank" class="group app-card glass-card p-6 rounded-3xl hover:shadow-xl border-t-4 border-t-blue-500 relative overflow-hidden">
+                <a href="Editor Soal.html" target="_blank" id="card-editor" class="group app-card glass-card p-6 rounded-3xl hover:shadow-xl border-t-4 border-t-blue-500 relative overflow-hidden">
                     <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                         <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 20 20"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /></svg>
                     </div>
@@ -186,7 +227,7 @@
                 </a>
 
                 <!-- 2. Manajemen Ujian -->
-                <a href="atur-ujian.html" target="_blank" class="group app-card glass-card p-6 rounded-3xl hover:shadow-xl border-t-4 border-t-indigo-500 relative overflow-hidden">
+                <a href="Admin Ujian.html" target="_blank" id="card-ujian" class="group app-card glass-card p-6 rounded-3xl hover:shadow-xl border-t-4 border-t-indigo-500 relative overflow-hidden">
                     <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                         <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" /><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" /></svg>
                     </div>
@@ -200,19 +241,15 @@
                     </div>
                 </a>
 
-                <!-- 3. APLIKASI TAMBAHAN BARU (ROSE/RED THEME) - DULU POSISI 9, SEKARANG 3 -->
-                <a href="data-siswa.html" target="_blank" class="group app-card glass-card p-6 rounded-3xl hover:shadow-xl border-t-4 border-t-rose-500 relative overflow-hidden">
+                <!-- 3. Manajemen Siswa -->
+                <a href="Manajemen Siswa.html" target="_blank" id="card-siswa" class="group app-card glass-card p-6 rounded-3xl hover:shadow-xl border-t-4 border-t-rose-500 relative overflow-hidden">
                     <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <!-- Icon Dekorasi Latar -->
                         <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 20 20"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"></path></svg>
                     </div>
                     <div class="app-icon-box w-16 h-16 rounded-2xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 flex items-center justify-center mb-4 shadow-sm">
-                        <!-- Icon Utama -->
                         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                     </div>
-                    <!-- Judul -->
                     <h4 class="text-lg font-bold mb-2 group-hover:text-rose-600 transition-colors">Manajemen Siswa</h4>
-                    <!-- Deskripsi -->
                     <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Kelola data siswa, input nilai rapor, dan cetak laporan hasil belajar.</p>
                     <div class="mt-6 flex items-center text-sm font-bold text-rose-600 dark:text-rose-400">
                         Buka Aplikasi <svg class="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
@@ -220,7 +257,7 @@
                 </a>
 
                 <!-- 4. Katalog Soal -->
-                <a href="katalog.html" target="_blank" class="group app-card glass-card p-6 rounded-3xl hover:shadow-xl border-t-4 border-t-yellow-500 relative overflow-hidden">
+                <a href="Katalog Soal.html" target="_blank" id="card-katalog" class="group app-card glass-card p-6 rounded-3xl hover:shadow-xl border-t-4 border-t-yellow-500 relative overflow-hidden">
                     <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                         <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 20 20"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                     </div>
@@ -235,12 +272,12 @@
                 </a>
 
                 <!-- 5. Live Monitoring -->
-                <a href="monitoring.html" target="_blank" class="group app-card glass-card p-6 rounded-3xl hover:shadow-xl border-t-4 border-t-green-500 relative overflow-hidden">
+                <a href="Live Monitoring.html" target="_blank" id="card-monitoring" class="group app-card glass-card p-6 rounded-3xl hover:shadow-xl border-t-4 border-t-green-500 relative overflow-hidden">
                     <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                         <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 20 20"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                     </div>
                     <div class="app-icon-box w-16 h-16 rounded-2xl bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 flex items-center justify-center mb-4 shadow-sm">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                     </div>
                     <h4 class="text-lg font-bold mb-2 group-hover:text-green-600 transition-colors">Live Monitoring</h4>
                     <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Pantau aktivitas ujian siswa secara real-time.</p>
@@ -250,7 +287,7 @@
                 </a>
 
                 <!-- 6. Analisis Akademik -->
-                <a href="analisis.html" target="_blank" class="group app-card glass-card p-6 rounded-3xl hover:shadow-xl border-t-4 border-t-purple-500 relative overflow-hidden">
+                <a href="Analisis Akademik.html" target="_blank" id="card-analisis" class="group app-card glass-card p-6 rounded-3xl hover:shadow-xl border-t-4 border-t-purple-500 relative overflow-hidden">
                     <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                         <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 20 20"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"></path></svg>
                     </div>
@@ -265,7 +302,7 @@
                 </a>
 
                 <!-- 7. Aplikasi Presensi -->
-                <a href="presensi.html" target="_blank" class="group app-card glass-card p-6 rounded-3xl hover:shadow-xl border-t-4 border-t-pink-500 relative overflow-hidden">
+                <a href="Aplikasi Presensi.html" target="_blank" id="card-presensi" class="group app-card glass-card p-6 rounded-3xl hover:shadow-xl border-t-4 border-t-pink-500 relative overflow-hidden">
                     <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                         <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" /><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" /></svg>
                     </div>
@@ -280,7 +317,7 @@
                 </a>
 
                 <!-- 8. Pengolahan Nilai -->
-                <a href="olah-nilai.html" target="_blank" class="group app-card glass-card p-6 rounded-3xl hover:shadow-xl border-t-4 border-t-teal-500 relative overflow-hidden">
+                <a href="Pengolahan Nilai.html" target="_blank" id="card-nilai" class="group app-card glass-card p-6 rounded-3xl hover:shadow-xl border-t-4 border-t-teal-500 relative overflow-hidden">
                     <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                         <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 20 20"><path d="M3 3a1 1 0 000 2h11a1 1 0 100-2H3zM3 7a1 1 0 000 2h7a1 1 0 100-2H3zM3 11a1 1 0 100 2h4a1 1 0 100-2H3zM15 8a1 1 0 10-2 0v5.586l-1.293-1.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L15 13.586V8z"></path></svg>
                     </div>
@@ -294,8 +331,8 @@
                     </div>
                 </a>
 
-                <!-- 9. Setup Sekolah (DULU POSISI 3, SEKARANG 9) -->
-                <a href="setup-sekolah.html" target="_blank" class="group app-card glass-card p-6 rounded-3xl hover:shadow-xl border-t-4 border-t-gray-500 relative overflow-hidden">
+                <!-- 9. Setup Sekolah -->
+                <a href="Setup Sekolah.html" target="_blank" id="card-setup" class="group app-card glass-card p-6 rounded-3xl hover:shadow-xl border-t-4 border-t-gray-500 relative overflow-hidden">
                     <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                         <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 20 20"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
                     </div>
@@ -305,6 +342,21 @@
                     <h4 class="text-lg font-bold mb-2 group-hover:text-gray-600 transition-colors">Setup Sekolah</h4>
                     <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Pusat Data Master: Guru, Mapel, & Kelas.</p>
                     <div class="mt-6 flex items-center text-sm font-bold text-gray-600 dark:text-gray-400">
+                        Buka Aplikasi <svg class="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                    </div>
+                </a>
+
+                <!-- 10. Pusat Kendali Asesmen (BARU) -->
+                <a href="Pusat Kendali Asesmen.html" target="_blank" id="card-pka" class="group app-card glass-card p-6 rounded-3xl hover:shadow-xl border-t-4 border-t-amber-500 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                         <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 20 20"><path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"></path><path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z"></path></svg>
+                    </div>
+                    <div class="app-icon-box w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-4 shadow-sm">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
+                    </div>
+                    <h4 class="text-lg font-bold mb-2 group-hover:text-amber-600 transition-colors">Pusat Kendali Asesmen</h4>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Kelola event ujian (PTS/PAS), distribusi soal, dan monitoring kurikulum.</p>
+                    <div class="mt-6 flex items-center text-sm font-bold text-amber-600 dark:text-amber-400">
                         Buka Aplikasi <svg class="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
                     </div>
                 </a>
@@ -322,11 +374,7 @@
     </footer>
 
     <!-- Firebase Logic -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
+    <script>
         const firebaseConfig = {
             apiKey: "AIzaSyAwIwimlyrE4qQqYa2gA8Pfygd59USsveQ",
             authDomain: "aplikasi-ulangan-01.firebaseapp.com",
@@ -336,31 +384,27 @@
             appId: "1:409085062439:web:280589d1a3e12e7b980d02",
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
 
         // --- GLOBAL STATE ---
         let currentGuru = null;
 
         document.addEventListener('DOMContentLoaded', async () => {
-            // Cek sesi
             const sessionID = localStorage.getItem('cbt_user_id');
             const sessionMapel = localStorage.getItem('cbt_user_mapel');
             
             if (sessionID && sessionMapel) {
-                // Restore sesi tanpa login ulang
                 updateUIForLoggedInUser(
                     localStorage.getItem('cbt_user_name'),
                     sessionMapel
                 );
                 initFirebase(sessionMapel);
             } else {
-                // Tampilkan form login
                 document.getElementById('dashboard-login-overlay').classList.remove('hidden');
             }
 
-            // Dark Mode Init
             const btn = document.getElementById('theme-toggle');
             if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.add('dark');
@@ -383,25 +427,14 @@
             errBox.classList.remove('hidden');
             
             try {
-                // 1. Anon Auth ke Firebase
-                await signInAnonymously(auth);
+                await auth.signInAnonymously();
+                const docRef = db.collection('users_guru').doc(id);
+                const docSnap = await docRef.get();
 
-                // 2. Cek ID di Database
-                const docRef = doc(db, 'users_guru', id);
-                const docSnap = await getDoc(docRef);
-
-                if (!docSnap.exists()) {
-                    throw new Error("ID Pengguna tidak ditemukan!");
-                }
-
+                if (!docSnap.exists) { throw new Error("ID Pengguna tidak ditemukan!"); }
                 const data = docSnap.data();
-                
-                // 3. Validasi PIN
-                if (data.pin !== pin) {
-                    throw new Error("PIN Salah! Silakan coba lagi.");
-                }
+                if (data.pin !== pin) { throw new Error("PIN Salah! Silakan coba lagi."); }
 
-                // 4. Login Sukses!
                 currentGuru = { id: id, ...data };
                 errBox.classList.add('hidden');
                 handleSuccessfulLogin(currentGuru);
@@ -414,30 +447,19 @@
 
         function handleSuccessfulLogin(guruData) {
             const mapelList = guruData.mapel || [];
-            
-            if (mapelList.length === 0) {
-                alert("Akun Anda belum memiliki Mapel Ampuan. Hubungi Admin.");
-                return;
-            }
-
-            if (mapelList.length === 1) {
-                finalizeSession(guruData, mapelList[0]);
-            } else {
-                showMapelSelector(guruData, mapelList);
-            }
+            if (mapelList.length === 0) { alert("Akun Anda belum memiliki Mapel Ampuan."); return; }
+            if (mapelList.length === 1) { finalizeSession(guruData, mapelList[0]); } 
+            else { showMapelSelector(guruData, mapelList); }
         }
 
         function showMapelSelector(guruData, mapelList) {
             const modal = document.getElementById('mapel-selector-modal');
             const container = document.getElementById('mapel-options-container');
-            
             container.innerHTML = mapelList.map(m => `
                 <button onclick="window.selectMapel('${m}')" class="w-full py-3 px-4 bg-gray-50 hover:bg-blue-50 text-gray-800 hover:text-blue-600 font-bold rounded-xl border border-gray-200 hover:border-blue-300 transition-all text-left flex justify-between items-center group">
-                    ${m}
-                    <span class="text-blue-400 group-hover:text-blue-600">➔</span>
+                    ${m} <span class="text-blue-400 group-hover:text-blue-600">➔</span>
                 </button>
             `).join('');
-
             document.getElementById('dashboard-login-overlay').classList.add('hidden');
             modal.classList.remove('hidden');
         }
@@ -459,85 +481,147 @@
 
         function updateUIForLoggedInUser(name, mapel) {
             document.getElementById('dashboard-login-overlay').classList.add('hidden');
-            
-            // Tampilkan Konten Utama dengan Transisi
             const main = document.getElementById('main-content');
             const footer = document.getElementById('main-footer');
-            
             main.classList.remove('hidden');
             footer.classList.remove('hidden');
-            
-            // Sedikit delay agar transisi opacity jalan
-            setTimeout(() => {
-                main.classList.remove('opacity-0');
-                footer.classList.remove('opacity-0');
-            }, 50);
+            setTimeout(() => { main.classList.remove('opacity-0'); footer.classList.remove('opacity-0'); }, 50);
 
-            // Update Teks
             document.getElementById('user-display-name').textContent = name;
             document.getElementById('user-display-mapel').textContent = mapel;
             document.getElementById('welcome-name').textContent = name;
             document.getElementById('welcome-mapel').textContent = mapel;
-
-            // Avatar Initials
             const initial = name.substring(0, 2).toUpperCase();
             document.getElementById('user-avatar').src = `https://ui-avatars.com/api/?name=${initial}&background=6366f1&color=fff`;
+
+            // --- ROLE BASED ACCESS CONTROL (RBAC) ---
+            const userId = localStorage.getItem('cbt_user_id'); // Ambil ID dari storage
+            applyAccessControl(userId, mapel);
+        }
+
+        // --- FUNGSI PENGATUR HAK AKSES ---
+        function applyAccessControl(userId, userMapel) {
+            const apps = {
+                editor: document.getElementById('card-editor'),
+                ujian: document.getElementById('card-ujian'),
+                siswa: document.getElementById('card-siswa'),
+                katalog: document.getElementById('card-katalog'),
+                monitoring: document.getElementById('card-monitoring'),
+                analisis: document.getElementById('card-analisis'),
+                presensi: document.getElementById('card-presensi'),
+                nilai: document.getElementById('card-nilai'),
+                setup: document.getElementById('card-setup'),
+                pka: document.getElementById('card-pka')
+            };
+
+            // Reset kondisi awal (semua terbuka & terlihat)
+            Object.values(apps).forEach(el => {
+                if(el) {
+                    el.classList.remove('hidden', 'app-locked');
+                    const badge = el.querySelector('.lock-badge');
+                    if(badge) badge.remove();
+                    // Restore href if stored
+                    if (el.dataset.originalHref) el.href = el.dataset.originalHref;
+                }
+            });
+
+            // 1. ADMIN UTAMA (SUPER ADMIN)
+            if (userId === 'admin_master' || userMapel === 'ADMIN PUSAT') {
+                // Bisa akses semua. Tidak ada yang disembunyikan atau dikunci.
+                return; 
+            }
+
+            // 2. ADMIN KURIKULUM (STAFF)
+            // Logika: Jika mapel mengandung kata 'KURIKULUM'
+            if (userMapel && userMapel.toUpperCase().includes('KURIKULUM')) {
+                // Setup Sekolah -> Hidden
+                if(apps.setup) apps.setup.classList.add('hidden');
+                
+                // Aplikasi Guru (Teknis) -> Locked/Gembok
+                // PKA -> Terbuka (Default)
+                const guruApps = ['editor', 'ujian', 'siswa', 'katalog', 'monitoring', 'analisis', 'presensi', 'nilai'];
+                guruApps.forEach(key => lockApp(apps[key]));
+                return;
+            }
+
+            // 3. GURU MAPEL (DEFAULT)
+            // Setup Sekolah -> Hidden
+            if(apps.setup) apps.setup.classList.add('hidden');
+            
+            // PKA -> Hidden
+            if(apps.pka) apps.pka.classList.add('hidden');
+            
+            // Sisanya terbuka (Default)
+        }
+
+        function lockApp(element) {
+            if(!element) return;
+            // Simpan href asli jika belum disimpan
+            if (!element.dataset.originalHref) element.dataset.originalHref = element.href;
+            
+            element.classList.add('app-locked');
+            element.removeAttribute('href'); // Matikan link
+            element.removeAttribute('target');
+            
+            // Tambahkan Badge Visual Gembok
+            const badge = document.createElement('div');
+            badge.className = 'lock-badge';
+            badge.innerHTML = '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg> Akses Guru';
+            element.appendChild(badge);
         }
 
         window.loginAsAdminPusat = () => {
             document.getElementById('admin-pin-modal').classList.remove('hidden');
-            // Fokus otomatis ke input & bersihkan nilai lama
             const input = document.getElementById('input-admin-pin');
             input.value = '';
             setTimeout(() => input.focus(), 100);
         };
 
-        // 2. Menutup Modal
         window.closeAdminModal = () => {
              document.getElementById('admin-pin-modal').classList.add('hidden');
         };
 
-        // 3. Memproses Submit PIN
         window.handleAdminPinSubmit = (e) => {
             e.preventDefault();
             const pin = document.getElementById('input-admin-pin').value;
-            
             if (pin === "koes5637") { 
                 const adminData = {
                     id: 'admin_master',
                     fullName: 'Administrator Pusat',
                     kelas: ['SEMUA'],
-                    mapel: ['ADMIN PUSAT']
+                    mapel: ['ADMIN PUSAT'] // Kunci Role Admin
                 };
                 finalizeSession(adminData, "ADMIN PUSAT");
-                closeAdminModal(); // Tutup modal admin
+                closeAdminModal();
             } else {
                 alert("PIN Salah! Akses Ditolak.");
-                document.getElementById('input-admin-pin').value = ''; // Reset input
+                document.getElementById('input-admin-pin').value = '';
                 document.getElementById('input-admin-pin').focus();
             }
         };
+
         window.logout = function() {
             if(confirm('Keluar dari dashboard?')) {
-                localStorage.removeItem('cbt_user_id');
-                localStorage.removeItem('cbt_user_name');
-                localStorage.removeItem('cbt_user_mapel');
-                localStorage.removeItem('cbt_user_kelas');
+                // 1. Amankan API Key AI (dari Editor & Katalog) sebelum memori dihapus
+                const apiKeyEditor = localStorage.getItem('gemini_api_key_soal');
+                const apiKeyKatalog = localStorage.getItem('GEMINI_API_KEY');
+                
+                // 2. Bersihkan memori sesi login guru
+                localStorage.clear();
+                
+                // 3. Kembalikan API Key AI ke memori browser agar tidak hilang
+                if (apiKeyEditor) localStorage.setItem('gemini_api_key_soal', apiKeyEditor);
+                if (apiKeyKatalog) localStorage.setItem('GEMINI_API_KEY', apiKeyKatalog);
+                
                 location.reload();
             }
         };
 
-        // --- DASHBOARD STATS ---
         async function initFirebase(currentUserMapel) {
             try {
-                // Anonymous sign-in (jika belum, meski harusnya sudah di login step)
-                if (!auth.currentUser) await signInAnonymously(auth);
-
-                // 1. Hitung Soal (Filter by Mapel)
+                if (!auth.currentUser) await auth.signInAnonymously();
                 let totalSoal = 0;
-                const qSoal = query(collection(db, 'bank_soal')); 
-                const snapSoal = await getDocs(qSoal);
-                
+                const snapSoal = await db.collection('bank_soal').get();
                 if (currentUserMapel === 'ADMIN PUSAT') {
                     totalSoal = snapSoal.size;
                 } else {
@@ -548,25 +632,18 @@
                 }
                 updateStat('stat-bank-soal', totalSoal);
 
-                // 2. Hitung Ujian Aktif (Global / Mapel)
                 let totalUjian = 0;
-                const snapUjian = await getDocs(collection(db, 'ujian_terjadwal')); 
+                const snapUjian = await db.collection('ujian_terjadwal').get();
                 if (currentUserMapel === 'ADMIN PUSAT') {
                     totalUjian = snapUjian.size;
                 } else {
                     snapUjian.forEach(doc => {
                         const d = doc.data();
-                        // Filter manual karena struktur data lama mungkin belum punya field mapel
                         if (d.mapel === currentUserMapel) totalUjian++;
                     });
                 }
                 updateStat('stat-ujian-aktif', totalUjian);
-
-                // 3. STAT SISWA DIHAPUS
-
-            } catch (e) {
-                console.error("Firebase Error:", e);
-            }
+            } catch (e) { console.error("Firebase Error:", e); }
         }
 
         function updateStat(id, val) {
@@ -574,7 +651,8 @@
             if(el) el.innerHTML = val.toLocaleString('id-ID');
         }
     </script>
-	<!-- MODAL KHUSUS LOGIN ADMIN (Supaya PIN jadi Bintang *****) -->
+
+    <!-- MODAL KHUSUS LOGIN ADMIN -->
     <div id="admin-pin-modal" class="fixed inset-0 z-[120] hidden flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
         <div class="bg-white dark:bg-cyber-800 w-full max-w-xs rounded-2xl p-6 shadow-2xl border border-gray-200 dark:border-gray-700 transform transition-all scale-100">
             <div class="text-center mb-4">
