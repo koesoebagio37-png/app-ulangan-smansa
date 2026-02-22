@@ -382,9 +382,9 @@
 								<div class="h-3 w-px bg-gray-200 dark:bg-emerald-900 mx-0.5"></div>
 
 								<!-- Tombol Ganti Key -->
-								<button onclick="if(confirm('Hapus kunci AI?')){localStorage.removeItem('gemini_api_key_soal');}" 
+								<button onclick="window.gantiApiKey()" 
 										type="button" 
-										class="text-[9px] font-bold text-gray-400 hover:text-red-500 px-1.5 py-1 transition-colors">
+										class="text-[9px] font-bold text-indigo-400 hover:text-indigo-600 px-1.5 py-1 transition-colors" title="Masukkan atau Ganti API Key Gemini">
 									🔄 Ganti Key
 								</button>
 							</div>
@@ -696,7 +696,22 @@
 
 
 // --- AI GENERATION LOGIC (IMPROVED: READS 2 BLOCKS, IMAGE & SMART API KEY) ---
-        window.generateAIExplanation = async () => {
+        // Fungsi untuk Mengganti API Key AI
+        window.gantiApiKey = () => {
+            const currentKey = localStorage.getItem('gemini_api_key_soal') || '';
+            const newKey = prompt("Masukkan API Key Gemini Anda yang baru:\n(Biarkan kosong dan klik OK jika hanya ingin menghapus key saat ini)", currentKey);
+            
+            if (newKey !== null) { // Jika guru tidak mengklik 'Batal/Cancel'
+                if (newKey.trim() === '') {
+                    localStorage.removeItem('gemini_api_key_soal');
+                    showNotification("API Key berhasil dihapus dari browser.");
+                } else {
+                    localStorage.setItem('gemini_api_key_soal', newKey.trim());
+                    showNotification("API Key berhasil diperbarui dan disimpan!");
+                }
+            }
+        };
+		window.generateAIExplanation = async () => {
             // SISTEM API KEY OTOMATIS:
             // Aplikasi akan mengecek apakah sudah ada kunci di memori browser.
             // Jika belum ada, aplikasi akan memunculkan kotak input (prompt).
@@ -3152,6 +3167,5 @@ async function bangunPetaKurikulum() {
     </div>
 </body>
 </html>
-
 
 
