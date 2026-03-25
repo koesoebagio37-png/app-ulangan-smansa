@@ -101,6 +101,18 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
+    <!-- IDLE TIMEOUT OVERLAY -->
+    <div id="idle-overlay" class="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm hidden flex-col items-center justify-center p-4 transition-opacity duration-300">
+        <div class="glass-panel p-8 rounded-3xl text-center border border-warning/50 shadow-2xl max-w-md w-full bg-white dark:bg-slate-900">
+            <div class="text-6xl mb-4 animate-bounce">⏳</div>
+            <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-2">Pemantauan Dijeda</h2>
+            <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">Koneksi ke server diputus otomatis karena tidak ada aktivitas (mouse/keyboard) selama 2 menit. Ini dilakukan untuk menghemat kuota sekolah.</p>
+            <button onclick="resumeMonitoring()" class="w-full bg-warning hover:bg-yellow-500 text-slate-900 font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95 uppercase tracking-wider text-sm">
+                Lanjutkan Pemantauan
+            </button>
+        </div>
+    </div>
+
     <!-- LOGIN OVERLAY -->
     <div id="login-overlay" class="fixed inset-0 z-[100] bg-gray-100 dark:bg-deep flex items-center justify-center p-4">
         <div class="glass-panel p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-slate-900/90">
@@ -154,9 +166,8 @@
                         <svg id="icon-moon" class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
                     </button>
 
-                    <div id="connection-status" class="hidden md:flex px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        LIVE
+                    <div id="connection-status" class="hidden">
+                        <!-- Indikator koneksi di-handle oleh JS -->
                     </div>
                 </div>
             </div>
@@ -184,7 +195,7 @@
             </div>
         </div>
         
-        <!-- NEW: MASSIVE ACTION BAR -->
+        <!-- MASSIVE ACTION BAR -->
         <div id="mass-action-container" class="hidden">
             <button onclick="forceFinishAll()" id="btn-force-all" class="w-full md:w-auto px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-600/20 transition-all flex items-center justify-center gap-3">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -253,14 +264,29 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
 
+        // --- THEME TOGGLE LOGIC ---
+        window.toggleTheme = () => {
+            document.documentElement.classList.toggle('dark');
+            localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+        };
+
         let currentListener = null;
         let selectedStudentId = null;
-        // GLOBAL VARS FOR IDENTITY
+        
+        // GLOBAL VARS FOR IDENTITY & IDLE TIMEOUT
         let currentGuruId = null;
         let currentGuruMapel = null;
-        let allExamsCache = []; // Cache untuk data ujian
-        let currentExamDuration = 0; // Durasi ujian aktif
-        let currentActiveStudents = []; // NEW: Untuk simpan data siswa yang sedang mengerjakan
+        let currentGuruKelas = []; // ARRAY KELAS AMPU
+        let allExamsCache = [];
+        let currentExamDuration = 0;
+        let currentActiveStudents = [];
+        let activeExamCode = null; // Menyimpan kode ujian yang sedang dipantau
+
+        // IDLE LOGIC VARIABLES
+        let idleTime = 0;
+        let idleInterval = null;
+        let isIdle = false;
+        const IDLE_LIMIT = 120; // 120 detik = 2 Menit
 
         // Init & Auth Check
         document.addEventListener('DOMContentLoaded', async () => {
@@ -270,10 +296,27 @@
                 const fallback = document.getElementById('login-fallback');
                 const headerId = document.getElementById('header-user-id');
 
-                // 1. Cek Token LocalStorage
+                // 1. Cek Token & Kelas dari LocalStorage
                 const tokenMapel = localStorage.getItem('cbt_user_mapel');
                 currentGuruId = localStorage.getItem('cbt_user_id');
                 currentGuruMapel = tokenMapel;
+                
+                // FIX: Parsing Kelas yang lebih tahan banting (Robust)
+                try {
+                    const rawKelas = localStorage.getItem('cbt_user_kelas');
+                    if (rawKelas) {
+                        // Cek apakah bentuknya JSON Array atau teks yang dipisah koma
+                        if (rawKelas.startsWith('[')) {
+                            currentGuruKelas = JSON.parse(rawKelas);
+                        } else {
+                            currentGuruKelas = rawKelas.split(',').map(s => s.trim());
+                        }
+                    } else {
+                        currentGuruKelas = [];
+                    }
+                } catch(e) { 
+                    currentGuruKelas = []; 
+                }
 
                 if(user && tokenMapel) {
                     // Login Sukses & Sesi Ada
@@ -294,20 +337,64 @@
                 }
             });
 
-            // Start global timer update
+            // Start global timer update for UI
             startLiveTimerUpdate();
         });
 
-        // Theme Toggle Logic
-        window.toggleTheme = () => {
-            if (document.documentElement.classList.contains('dark')) {
-                document.documentElement.classList.remove('dark');
-                localStorage.theme = 'light';
-            } else {
-                document.documentElement.classList.add('dark');
-                localStorage.theme = 'dark';
+        // --- IDLE TIMEOUT LOGIC ---
+        function resetIdleTimer() {
+            idleTime = 0;
+        }
+
+        function startIdleTimer() {
+            if (idleInterval) clearInterval(idleInterval);
+            idleInterval = setInterval(() => {
+                idleTime++;
+                if (idleTime >= IDLE_LIMIT && !isIdle && currentListener) {
+                    // Waktu habis, putuskan koneksi
+                    isIdle = true;
+                    if(currentListener) currentListener(); // Unsubscribe Firebase
+                    currentListener = null; 
+                    
+                    document.getElementById('idle-overlay').classList.remove('hidden');
+                    document.getElementById('idle-overlay').classList.add('flex');
+                    setConnectionStatus('idle');
+                }
+            }, 1000);
+        }
+
+        // Listener aktivitas fisik pengguna
+        window.addEventListener('mousemove', resetIdleTimer);
+        window.addEventListener('keypress', resetIdleTimer);
+        window.addEventListener('touchstart', resetIdleTimer);
+        window.addEventListener('scroll', resetIdleTimer);
+        window.addEventListener('click', resetIdleTimer);
+
+        window.resumeMonitoring = () => {
+            isIdle = false;
+            resetIdleTimer();
+            document.getElementById('idle-overlay').classList.add('hidden');
+            document.getElementById('idle-overlay').classList.remove('flex');
+            
+            // Reconnect jika ada ujian yang dipilih
+            if(activeExamCode) {
+                startMonitoring(activeExamCode);
             }
         };
+
+        // Status Indikator Visual
+        function setConnectionStatus(status) {
+            const el = document.getElementById('connection-status');
+            if (status === 'live') {
+                el.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> LIVE';
+                el.className = 'hidden md:flex px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold items-center gap-2';
+            } else if (status === 'idle') {
+                el.innerHTML = '<span class="w-2 h-2 rounded-full bg-warning animate-pulse"></span> JEDA';
+                el.className = 'hidden md:flex px-3 py-1 rounded-full bg-warning/10 text-warning border border-warning/20 text-xs font-bold items-center gap-2';
+            } else {
+                el.classList.add('hidden');
+            }
+        }
 
         async function loadExamList() {
             const select = document.getElementById('filter-ujian');
@@ -324,23 +411,22 @@
                 const snap = await getDocs(q);
                 allExamsCache = [];
 
-                if (snap.empty) {
-                    select.innerHTML = '<option value="">Belum ada ujian aktif.</option>';
-                    return;
-                }
-
                 snap.forEach(doc => {
                     const d = doc.data();
-                    
-                    // Filter Mapel Strict (Konsisten dengan aplikasi lain)
+                    // Filter Mapel Strict
                     if (currentGuruMapel !== 'ADMIN PUSAT' && d.mapel && d.mapel !== currentGuruMapel) {
                         return; // Skip ujian mapel lain
                     }
-
                     allExamsCache.push({ ...d, id: doc.id });
                 });
 
-                // 1. Populate Filter Kelas Otomatis
+                if (allExamsCache.length === 0) {
+                    select.innerHTML = '<option value="">Belum ada ujian aktif.</option>';
+                    populateDynamicClassFilter(); // Agar opsi dropdown ikut bersih
+                    return;
+                }
+
+                // 1. Populate Filter Kelas Otomatis Berdasarkan Ujian yang Benar-Benar Ada
                 populateDynamicClassFilter();
 
                 // 2. Render Dropdown Ujian Awal
@@ -352,16 +438,21 @@
             }
         }
 
-        // --- FILTER LOGIC (NEW) ---
+        // --- FILTER KELAS LOGIC (SUPER FIXED & STRICT) ---
         function populateDynamicClassFilter() {
             const classSelect = document.getElementById('filter-kelas');
             const currentVal = classSelect.value;
             const classSet = new Set();
 
+            // Murni mengambil kelas dari daftar ujian yang valid & aktif untuk MAPEL INI.
+            // Karena allExamsCache sudah disaring secara ketat berdasarkan currentGuruMapel di loadExamList()
             allExamsCache.forEach(ex => {
-                // Ambil kelas target dari setiap ujian
                 if (ex.targetKelas && Array.isArray(ex.targetKelas)) {
-                    ex.targetKelas.forEach(c => classSet.add(c));
+                    ex.targetKelas.forEach(c => {
+                        // Abaikan tag generic 'X', 'XI', 'XII', 'Semua' jika bukan Admin Pusat
+                        if (currentGuruMapel !== 'ADMIN PUSAT' && ['X', 'XI', 'XII', 'Semua', 'ALL'].includes(c)) return;
+                        classSet.add(c);
+                    });
                 } else if (ex.kelas) { 
                      classSet.add(ex.kelas);
                 }
@@ -387,23 +478,23 @@
             const select = document.getElementById('filter-ujian');
             const filterClass = document.getElementById('filter-kelas').value;
             
-            // Stop monitoring jika list berubah agar tidak bingung
+            // Stop monitoring jika list berubah
             stopMonitoring(); 
             select.innerHTML = '<option value="">-- Pilih Kode Ujian --</option>';
 
             const filtered = allExamsCache.filter(ex => {
                 if (!filterClass) return true;
-                if (ex.targetSemuaKelas) return true;
+                if (ex.targetSemuaKelas) return true; // Ujian untuk 'Semua Kelas' otomatis valid untuk filter apapun
                 const classes = ex.targetKelas || (ex.kelas ? [ex.kelas] : []);
                 return classes.includes(filterClass);
             });
 
             if (filtered.length === 0) {
-                select.innerHTML = '<option value="" disabled>Tidak ada ujian.</option>';
+                select.innerHTML = '<option value="" disabled>Tidak ada ujian untuk kelas ini.</option>';
                 return;
             }
 
-            // Sort (Opsional, misalnya berdasarkan tanggal)
+            // Sort berdasarkan tanggal terbaru
             filtered.sort((a,b) => new Date(b.tanggal || 0) - new Date(a.tanggal || 0));
 
             filtered.forEach(d => {
@@ -419,7 +510,6 @@
             });
         }
 
-        // Listener untuk Filter Kelas
         document.getElementById('filter-kelas').addEventListener('change', renderExamDropdown);
 
         document.getElementById('filter-ujian').addEventListener('change', (e) => {
@@ -430,13 +520,24 @@
 
         function stopMonitoring() {
             if(currentListener) currentListener();
-            document.getElementById('cards-container').innerHTML = '<div class="col-span-full text-center py-20 text-slate-500 dark:text-slate-400">Pilih kode ujian untuk memulai.</div>';
-            document.getElementById('mass-action-container').classList.add('hidden'); // Hide bulk btn
+            activeExamCode = null;
+            isIdle = false;
+            clearInterval(idleInterval);
+            setConnectionStatus('offline');
+
+            document.getElementById('cards-container').innerHTML = '<div class="col-span-full text-center py-20 text-slate-500 dark:text-slate-400">Pilih kode ujian untuk memulai pemantauan.</div>';
+            document.getElementById('mass-action-container').classList.add('hidden');
             resetStats();
         }
 
         function startMonitoring(examCode) {
             if(currentListener) currentListener();
+            
+            activeExamCode = examCode;
+            isIdle = false;
+            resetIdleTimer();
+            startIdleTimer();
+            setConnectionStatus('live');
             
             // GET DURATION
             const selectedExam = allExamsCache.find(e => e.kodeUjian === examCode);
@@ -447,18 +548,20 @@
             const q = query(collection(db, 'hasil_ujian'), where('ujianId', '==', examCode));
             
             currentListener = onSnapshot(q, (snapshot) => {
+                // FIX PENTING: resetIdleTimer() telah DIHAPUS dari sini. 
+                // Timer 2 menit sekarang murni hanya direset oleh pergerakan mouse/tangan guru, bukan dari data siswa.
+
                 const students = [];
                 snapshot.forEach(doc => students.push({id: doc.id, ...doc.data()}));
                 
                 // Sort: Yang curang & aktif di atas
                 students.sort((a, b) => {
-                    // Prioritas: Suspended/Pelanggaran > Selesai > Mengerjakan
                     const statusRank = { 'suspended': 3, 'selesai': 2, 'mengerjakan': 1 };
                     const rankA = statusRank[a.status] || 0;
                     const rankB = statusRank[b.status] || 0;
 
                     if (a.status === 'suspended' || b.status === 'suspended') {
-                         return rankB - rankA; // Suspended paling atas
+                         return rankB - rankA; 
                     }
                     if (b.pelanggaran !== a.pelanggaran) return b.pelanggaran - a.pelanggaran;
                     return b.skor - a.skor;
@@ -476,7 +579,6 @@
             });
         }
 
-        // NEW: Update tombol massal visibility
         function updateMassActionButton() {
             const btnContainer = document.getElementById('mass-action-container');
             const btnCount = document.getElementById('active-count-btn');
@@ -489,7 +591,6 @@
             }
         }
 
-        // NEW: Fungsi Massal Paksa Selesai
         window.forceFinishAll = async () => {
             if (currentActiveStudents.length === 0) return;
             
@@ -500,7 +601,6 @@
                 if (confirm(`Konfirmasi Terakhir: Yakin selesaikan ${count} peserta sekarang?`)) {
                     
                     try {
-                        // Gunakan Batch untuk efisiensi
                         const batch = writeBatch(db);
                         
                         currentActiveStudents.forEach(student => {
@@ -531,21 +631,18 @@
             }
 
             students.forEach(s => {
-                const isOnline = s.lastHeartbeat && (Date.now() - s.lastHeartbeat.toMillis() < 60000); // 1 min threshold
+                const isOnline = s.lastHeartbeat && (Date.now() - s.lastHeartbeat.toMillis() < 60000); 
                 const statusColor = s.status === 'selesai' ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-400/10 border-emerald-200 dark:border-emerald-400/20' : 
                                     (s.status === 'suspended' ? 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-400/10 border-red-200 dark:border-red-400/20' : 
                                     'text-sky-600 dark:text-sky-400 bg-sky-100 dark:bg-sky-400/10 border-sky-200 dark:border-sky-400/20');
                 
                 let statusContent = s.status === 'selesai' ? 'SELESAI' : (s.status === 'suspended' ? 'SUSPENDED' : (isOnline ? 'MENGERJAKAN' : 'OFFLINE'));
 
-                // TIMER LOGIC IN STATUS
                 if (s.status === 'mengerjakan' && s.mulaiPada && currentExamDuration > 0) {
                     const endTime = s.mulaiPada.toMillis() + (currentExamDuration * 60000);
-                    // Add attribute for global timer update
                     statusContent = `<div class="flex items-center gap-2"><span>MENGERJAKAN</span><span class="live-timer font-mono bg-white/20 px-1 rounded" data-endtime="${endTime}">...</span></div>`;
                 }
 
-                // Badge pelanggaran
                 let violationBadge = '';
                 if (s.pelanggaran > 0) {
                     violationBadge = `
@@ -566,7 +663,6 @@
                 const card = document.createElement('div');
                 card.className = `glass-panel rounded-2xl p-5 student-card flex flex-col relative overflow-hidden group ${s.pelanggaran > 0 ? 'border-red-300 dark:border-red-500/30' : 'border-slate-200 dark:border-white/5'}`;
                 
-                // Background Indicator for cheating
                 if(s.pelanggaran > 0) {
                     card.innerHTML += `<div class="absolute inset-0 bg-red-500/5 z-0 pointer-events-none"></div>`;
                 }
@@ -582,7 +678,7 @@
                                 <p class="text-xs text-slate-500 dark:text-slate-400 font-mono">${s.nis}</p>
                             </div>
                         </div>
-                        <button onclick="openActionModal('${s.id}', '${s.nama}')" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                        <button onclick="openActionModal('${s.id}', '${s.nama.replace(/'/g, "\\'")}')" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors z-20">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg>
                         </button>
                     </div>
@@ -672,12 +768,10 @@
                     }
                 } else if(action === 'force_finish') {
                     if(confirm("Paksa selesaikan ujian siswa ini?")) {
-                        // Menggunakan serverTimestamp dengan benar
                         await updateDoc(ref, { status: 'selesai', selesaiPada: serverTimestamp() });
                     }
                 } else if(action === 'suspend') {
                     if(confirm("Diskualifikasi siswa ini?")) {
-                        // MODIFIKASI: Ubah status jadi suspended DAN ubah skor jadi 0 sesuai permintaan
                         await updateDoc(ref, { 
                             status: 'suspended', 
                             skor: 0
