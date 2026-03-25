@@ -232,8 +232,14 @@
                 </div>
                 
                 <div class="flex items-center gap-4">
+                    <!-- REFRESH BUTTON -->
+                    <button id="btn-refresh-grid" onclick="window.refreshGridData()" class="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-gray-300 hover:text-gold transition-colors bg-gray-100 dark:bg-cyber-700 hover:bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-cyber-600 shadow-sm" title="Tarik soal terbaru dari Editor">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        <span class="hidden sm:inline">Refresh Soal</span>
+                    </button>
+                    
                     <!-- TOGGLE KUNCI JAWABAN -->
-                    <label class="flex items-center gap-2 cursor-pointer bg-gray-50 dark:bg-cyber-700 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-cyber-600 hover:border-gold transition select-none">
+                    <label class="flex items-center gap-2 cursor-pointer bg-gray-50 dark:bg-cyber-700 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-cyber-600 hover:border-gold transition select-none shadow-sm">
                         <input type="checkbox" id="toggle-key-visibility" class="w-4 h-4 text-gold rounded focus:ring-gold accent-gold">
                         <span class="text-xs font-bold text-slate-700 dark:text-gray-300">👁️ Tampilkan Kunci</span>
                     </label>
@@ -373,6 +379,35 @@
                     </select>
                 </div>
             </div>
+            <!-- FITUR BARU: PILIHAN TUJUAN -->
+                <div class="bg-gray-50 dark:bg-cyber-900/50 p-4 rounded-xl border border-gray-200 dark:border-cyber-700 mt-4">
+                    <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-3">Tujuan Paket Soal</label>
+                    <div class="space-y-3">
+                        <label class="flex items-start gap-3 cursor-pointer group">
+                            <input type="radio" name="pkg-dest" value="mandiri" checked onchange="window.toggleEventSelect(false)" class="mt-1 text-gold focus:ring-gold bg-gray-200 border-transparent">
+                            <div>
+                                <span class="block text-sm font-bold text-gray-800 dark:text-white group-hover:text-gold transition-colors">Ulangan Harian / Mandiri</span>
+                                <span class="block text-xs text-gray-500">Disimpan sebagai draft di Admin Ujian Anda.</span>
+                            </div>
+                        </label>
+                        <label class="flex items-start gap-3 cursor-pointer group">
+                            <input type="radio" name="pkg-dest" value="panitia" onchange="window.toggleEventSelect(true)" class="mt-1 text-gold focus:ring-gold bg-gray-200 border-transparent">
+                            <div>
+                                <span class="block text-sm font-bold text-gray-800 dark:text-white group-hover:text-gold transition-colors">Setor ke Panitia (PTS/PAS)</span>
+                                <span class="block text-xs text-gray-500">Dikirim ke Pusat Kendali Asesmen.</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Dropdown Event (Hidden by default) -->
+                    <div id="event-select-container" class="mt-4 hidden pl-7 border-l-2 border-gold">
+                        <label class="block text-xs font-bold text-gray-500 mb-1">Pilih Event Ujian</label>
+                        <select id="pkg-event" class="w-full bg-white dark:bg-cyber-800 border border-gray-200 dark:border-cyber-600 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-gold outline-none dark:text-white">
+                            <option value="">-- Pilih Event Aktif --</option>
+                            <!-- Diisi oleh JS -->
+                        </select>
+                    </div>
+                </div>
             <div class="mt-6 flex gap-3">
                 <button id="cancel-checkout" class="flex-1 py-2.5 border border-gray-300 dark:border-cyber-600 text-gray-600 dark:text-gray-300 font-bold rounded-lg hover:bg-gray-50 dark:hover:bg-cyber-700">Batal</button>
                 <button id="confirm-checkout" class="flex-1 py-2.5 bg-slate-900 dark:bg-indigo-600 text-white font-bold rounded-lg hover:bg-slate-800 dark:hover:bg-indigo-700 shadow-lg">Kirim ke Admin</button>
@@ -389,7 +424,8 @@
             <textarea id="edit-naskah" class="flex-1 w-full p-4 border border-gray-300 dark:border-cyber-600 rounded-xl bg-gray-50 dark:bg-cyber-900 dark:text-white focus:border-gold outline-none resize-none font-serif leading-relaxed mb-4" placeholder="Edit naskah soal di sini..."></textarea>
             <div class="flex justify-end gap-3">
                 <button onclick="window.closeEditModal()" class="px-4 py-2 rounded-lg border border-gray-300 dark:border-cyber-600 text-gray-600 dark:text-gray-300 font-bold hover:bg-gray-100 dark:hover:bg-cyber-700">Batal</button>
-                <button onclick="window.saveQuestionText()" class="px-6 py-2 rounded-lg bg-gold hover:bg-yellow-600 text-white font-bold shadow-lg">Simpan Perubahan</button>
+                <!-- TAMBAH ID UNTUK FIX TOMBOL NYANGKUT -->
+                <button id="btn-save-edit-modal" onclick="window.saveQuestionText()" class="px-6 py-2 rounded-lg bg-gold hover:bg-yellow-600 text-white font-bold shadow-lg">Simpan Perubahan</button>
             </div>
         </div>
     </div>
@@ -400,8 +436,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
+        import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, runTransaction, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         const firebaseConfig = { apiKey: "AIzaSyAwIwimlyrE4qQqYa2gA8Pfygd59USsveQ", authDomain: "aplikasi-ulangan-01.firebaseapp.com", projectId: "aplikasi-ulangan-01", storageBucket: "aplikasi-ulangan-01.firebasestorage.app", messagingSenderId: "409085062439", appId: "1:409085062439:web:280589d1a3e12e7b980d02" };
 
         const app = initializeApp(firebaseConfig);
@@ -536,57 +571,101 @@
         }
 
         // --- CORE DATA LOGIC ---
+        async function fetchAllQuestionsFromDB() {
+            const snap = await getDocs(collection(db, 'bank_soal'));
+            let tempQuestions = [];
+            snap.forEach(doc => { 
+                const d = doc.data(); 
+                d.id = doc.id; 
+                d.metadata = d.metadata || {};
+                if(!d.metadata.mapel) d.metadata.mapel = 'Umum';
+                if(!d.metadata.kelas) d.metadata.kelas = 'Umum';
+                if(!d.metadata.bab) d.metadata.bab = 'Lainnya';
+                
+                const dateVal = d.updatedAt || d.tanggal || d.tanggalUpdate || d.createdAt || d.timestamp || d.date;
+
+                if (dateVal && dateVal.seconds) {
+                    d.sortTime = dateVal.seconds;
+                    d.displayDate = new Date(dateVal.seconds * 1000).toLocaleDateString('id-ID');
+                } else if (dateVal && typeof dateVal === 'string') {
+                    d.sortTime = new Date(dateVal).getTime() / 1000;
+                    d.displayDate = new Date(dateVal).toLocaleDateString('id-ID');
+                } else {
+                    d.sortTime = 0;
+                    d.displayDate = 'Tanggal -'; 
+                }
+
+                tempQuestions.push(d); 
+            });
+
+            if (currentGuruMapel && currentGuruMapel !== "ADMIN PUSAT") {
+                tempQuestions = tempQuestions.filter(q => q.metadata.mapel === currentGuruMapel);
+            }
+
+            tempQuestions.sort((a, b) => {
+                if (a.metadata.mapel !== b.metadata.mapel) return a.metadata.mapel.localeCompare(b.metadata.mapel);
+                if (a.metadata.kelas !== b.metadata.kelas) return a.metadata.kelas.localeCompare(b.metadata.kelas);
+                if (a.metadata.bab !== b.metadata.bab) return a.metadata.bab.localeCompare(b.metadata.bab);
+                const gA = a.metadata.groupId || '';
+                const gB = b.metadata.groupId || '';
+                if (gA !== gB) return gA.localeCompare(gB);
+                return a.sortTime - b.sortTime;
+            });
+
+            const keySnap = await getDocs(collection(db, 'bank_soal_privat'));
+            keysMap = {};
+            keySnap.forEach(doc => { keysMap[doc.id] = doc.data().kunci; });
+            
+            allQuestions = tempQuestions;
+        }
+
         async function initData() {
             els.loading.classList.remove('hidden');
             try {
-                const snap = await getDocs(collection(db, 'bank_soal'));
-                allQuestions = [];
-                snap.forEach(doc => { 
-                    const d = doc.data(); 
-                    d.id = doc.id; 
-                    d.metadata = d.metadata || {};
-                    if(!d.metadata.mapel) d.metadata.mapel = 'Umum';
-                    if(!d.metadata.kelas) d.metadata.kelas = 'Umum';
-                    if(!d.metadata.bab) d.metadata.bab = 'Lainnya';
-                    
-                    const dateVal = d.updatedAt || d.tanggal || d.tanggalUpdate || d.createdAt || d.timestamp || d.date;
-
-                    if (dateVal && dateVal.seconds) {
-                        d.sortTime = dateVal.seconds;
-                        d.displayDate = new Date(dateVal.seconds * 1000).toLocaleDateString('id-ID');
-                    } else if (dateVal && typeof dateVal === 'string') {
-                        d.sortTime = new Date(dateVal).getTime() / 1000;
-                        d.displayDate = new Date(dateVal).toLocaleDateString('id-ID');
-                    } else {
-                        d.sortTime = 0;
-                        d.displayDate = 'Tanggal -'; 
-                    }
-
-                    allQuestions.push(d); 
-                });
-
-                if (currentGuruMapel && currentGuruMapel !== "ADMIN PUSAT") {
-                    allQuestions = allQuestions.filter(q => q.metadata.mapel === currentGuruMapel);
-                }
-
-                allQuestions.sort((a, b) => {
-                    if (a.metadata.mapel !== b.metadata.mapel) return a.metadata.mapel.localeCompare(b.metadata.mapel);
-                    if (a.metadata.kelas !== b.metadata.kelas) return a.metadata.kelas.localeCompare(b.metadata.kelas);
-                    if (a.metadata.bab !== b.metadata.bab) return a.metadata.bab.localeCompare(b.metadata.bab);
-                    const gA = a.metadata.groupId || '';
-                    const gB = b.metadata.groupId || '';
-                    if (gA !== gB) return gA.localeCompare(gB);
-                    return a.sortTime - b.sortTime;
-                });
-
-                const keySnap = await getDocs(collection(db, 'bank_soal_privat'));
-                keysMap = {};
-                keySnap.forEach(doc => { keysMap[doc.id] = doc.data().kunci; });
-                
+                await fetchAllQuestionsFromDB();
                 populateMapelDropdown();
                 els.loading.classList.add('hidden');
             } catch (e) { alert("Gagal memuat: " + e.message); els.loading.classList.add('hidden'); }
         }
+
+        // --- NEW: REFRESH GRID DATA WITHOUT LOSING STATE ---
+        window.refreshGridData = async () => {
+            const btn = document.getElementById('btn-refresh-grid');
+            const icon = btn.querySelector('svg');
+            if (icon) icon.classList.add('animate-spin');
+            
+            try {
+                await fetchAllQuestionsFromDB();
+                
+                // Re-apply filters using currently selected dropdown values
+                const m = els.mapel.value;
+                const k = els.kelas.value;
+                const b = els.bab.value;
+                const s = els.subbab.value;
+                const t = els.tipe.value;
+                const l = els.level.value;
+
+                filteredQuestions = allQuestions.filter(q => {
+                    const matchMapel = q.metadata.mapel === m;
+                    const matchKelas = q.metadata.kelas === k;
+                    const matchBab = q.metadata.bab === b;
+                    const matchSub = !s || q.metadata.subbab === s;
+                    const matchTipe = !t || q.type === t;
+                    const matchLevel = !l || q.metadata.kesulitan === l;
+
+                    return matchMapel && matchKelas && matchBab && matchSub && matchTipe && matchLevel;
+                });
+
+                els.count.textContent = filteredQuestions.length;
+                renderGrid(); // Re-render the grid with new data
+                
+                showToast("Data soal berhasil diperbarui!");
+            } catch (e) {
+                alert("Gagal memperbarui data: " + e.message);
+            } finally {
+                if (icon) icon.classList.remove('animate-spin');
+            }
+        };
 
         // --- CASCADING DROPDOWN LOGIC ---
         function getUnique(data, key) { return [...new Set(data.map(q => q.metadata[key]))].sort(); }
@@ -891,9 +970,10 @@
             const newText = els.editNaskah.value.trim();
             if (!newText) return alert("Naskah soal tidak boleh kosong.");
             
-            const originalBtnText = event.target.innerText;
-            event.target.innerText = "Menyimpan...";
-            event.target.disabled = true;
+            const btn = document.getElementById('btn-save-edit-modal');
+            const originalBtnText = "Simpan Perubahan";
+            btn.innerText = "Menyimpan...";
+            btn.disabled = true;
             
             try {
                 // Update Firestore
@@ -914,8 +994,8 @@
             } catch (e) {
                 alert("Gagal menyimpan: " + e.message);
             } finally {
-                event.target.innerText = originalBtnText;
-                event.target.disabled = false;
+                btn.innerText = originalBtnText;
+                btn.disabled = false;
             }
         };
 
@@ -1208,6 +1288,7 @@ Berikan penjelasan mengapa jawaban tersebut benar dan tips cepat untuk menjawab 
             }
 
             try {
+                // UPDATE: Mengganti ke endpoint model stabil gemini-2.5-flash
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1267,6 +1348,7 @@ Berikan penjelasan mengapa jawaban tersebut benar dan tips cepat untuk menjawab 
                     const base64 = await fileToBase64(blob);
                     const promptOcr = "Transcribe the text and mathematical formulas in this image into clear Markdown. Use LaTeX format (wrapped in $) for all math expressions. Do not explain, just transcribe.";
                     
+                    // UPDATE: Mengganti ke endpoint model stabil gemini-2.5-flash
                     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -1412,40 +1494,112 @@ Berikan penjelasan mengapa jawaban tersebut benar dan tips cepat untuk menjawab 
         };
 
         // Drawer & Modal Logic
+		// --- LOGIKA EVENT PANITIA (V11) ---
+        window.toggleEventSelect = (show) => {
+            const container = document.getElementById('event-select-container');
+            const select = document.getElementById('pkg-event');
+            if (show) {
+                container.classList.remove('hidden');
+                loadActiveEvents(); // Load saat diklik
+            } else {
+                container.classList.add('hidden');
+                select.value = "";
+            }
+        };
+
+        async function loadActiveEvents() {
+            const select = document.getElementById('pkg-event');
+            const now = new Date().toISOString().split('T')[0];
+            try {
+                // Menggunakan syntax Modular V11 (query, collection, where)
+                const q = query(collection(db, 'kurikulum_events'), where('endDate', '>=', now));
+                const snap = await getDocs(q);
+                
+                let opts = '<option value="">-- Pilih Event Aktif --</option>';
+                if(snap.empty) opts = '<option value="">Tidak ada event aktif</option>';
+                
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    opts += `<option value="${doc.id}">${d.name} (${d.type})</option>`;
+                });
+                select.innerHTML = opts;
+            } catch (e) {
+                console.warn("Gagal load event (Mungkin belum login/izin):", e);
+            }
+        }
         const drawer = document.getElementById('cart-drawer');
         document.getElementById('cart-btn').onclick = () => drawer.classList.remove('translate-x-full');
         document.getElementById('close-cart').onclick = () => drawer.classList.add('translate-x-full');
         document.getElementById('checkout-btn').onclick = () => { drawer.classList.add('translate-x-full'); document.getElementById('checkout-modal').classList.remove('hidden'); };
         document.getElementById('cancel-checkout').onclick = () => document.getElementById('checkout-modal').classList.add('hidden');
 
-        document.getElementById('confirm-checkout').onclick = async () => {
+		document.getElementById('confirm-checkout').onclick = async () => {
             const name = document.getElementById('package-name').value;
             const targetClass = document.getElementById('package-class').value;
+            
+            // Ambil data pilihan tujuan
+            const destElement = document.querySelector('input[name="pkg-dest"]:checked');
+            const dest = destElement ? destElement.value : 'mandiri';
+            const eventId = document.getElementById('pkg-event').value;
+            const eventSelect = document.getElementById('pkg-event');
+            const eventName = eventSelect.options[eventSelect.selectedIndex]?.text || '';
+
             if(!name) return alert("Isi nama ujian.");
+            if(dest === 'panitia' && !eventId) return alert("Harap pilih Event Ujian untuk penyetoran ke panitia.");
 
             const btn = document.getElementById('confirm-checkout');
+            const originalText = btn.innerText;
             btn.innerText = "Mengirim..."; btn.disabled = true;
 
             try {
                 const draftId = "DRAFT-" + Math.random().toString(36).substring(2, 8).toUpperCase();
                 const qIds = Array.from(cart);
-                const bobot = {}; qIds.forEach(id => bobot[id] = 1);
+                const bobot = {}; qIds.forEach(id => bobot[id] = 1); // Default bobot 1
+
+                // Tentukan Metadata
+                let jenisUjian = 'MANDIRI';
+                let statusDistribusi = 'DRAFT_GURU';
+                let finalName = name;
+                let finalEventId = null;
+
+                if (dest === 'panitia') {
+                    jenisUjian = 'TERPUSAT';
+                    statusDistribusi = 'MENUNGGU_VERIFIKASI';
+                    const eventPrefix = eventName.split('(')[0].trim();
+                    finalName = `[${eventPrefix}] ${name}`; 
+                    finalEventId = eventId;
+                } else {
+                    finalName = name + " (Mandiri)";
+                }
 
                 await setDoc(doc(db, 'ujian_terjadwal', draftId), {
-                    kodeUjian: draftId, namaUjian: name + " (Draft Katalog)",
+                    kodeUjian: draftId, 
+                    namaUjian: finalName,
                     targetKelas: targetClass === 'Semua' ? ['X','XI','XII'] : [targetClass],
                     targetSemuaKelas: targetClass === 'Semua',
-                    durasiMenit: 60, maxCurang: 3, pinReset: '123456',
+                    durasiMenit: 60, // Default 60 menit
+                    maxCurang: 3, 
+                    pinReset: '123456',
                     settingAcakSoal: true, settingAcakOpsi: true, settingTampilNilai: false,
                     daftarIdSoal: qIds, kustomisasiBobot: bobot,
                     status: 'draft', 
                     dibuatOleh: currentGuruId, 
                     mapel: currentGuruMapel,
-                    tanggal: new Date().toISOString()
+                    tanggal: new Date().toISOString(),
+                    
+                    // Field Baru Integrasi PKA
+                    jenis_ujian: jenisUjian,
+                    event_id: finalEventId,
+                    status_distribusi: statusDistribusi
                 });
 
                 document.getElementById('checkout-modal').classList.add('hidden');
-                showToast("Berhasil! Cek tab 'Kelola Aktif' di Admin Ujian.");
+                
+                if (dest === 'panitia') {
+                    showToast("Berhasil disetor ke Panitia! Menunggu validasi.");
+                } else {
+                    showToast("Berhasil! Cek tab 'Kelola Aktif' di Admin Ujian.");
+                }
                 
                 cart.clear(); updateCartUI(); 
                 document.querySelectorAll('.btn-select').forEach(b => {
@@ -1454,10 +1608,12 @@ Berikan penjelasan mengapa jawaban tersebut benar dan tips cepat untuk menjawab 
                     b.innerHTML = '+';
                 });
                 
-                btn.innerText = "Kirim ke Admin"; btn.disabled = false;
-            } catch (e) { alert(e.message); btn.disabled = false; }
+            } catch (e) { 
+                alert("Gagal: " + e.message); 
+            } finally {
+                btn.innerText = originalText; btn.disabled = false;
+            }
         };
     </script>
 </body>
 </html>
-
