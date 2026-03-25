@@ -581,25 +581,42 @@
              document.getElementById('admin-pin-modal').classList.add('hidden');
         };
 
-        window.handleAdminPinSubmit = (e) => {
+        // --- LOGIN LOGIC ADMIN PUSAT (BARU & AMAN) ---
+        window.handleAdminPinSubmit = async (e) => {
             e.preventDefault();
-            const pin = document.getElementById('input-admin-pin').value;
-            if (pin === "koes5637") { 
+            const passInput = document.getElementById('input-admin-pin').value;
+            const btnSubmit = e.target.querySelector('button[type="submit"]');
+            const originalText = btnSubmit.innerHTML;
+            
+            btnSubmit.innerHTML = "Memproses...";
+            btnSubmit.disabled = true;
+
+            try {
+                // Mengirimkan password ke server Google untuk dicek!
+                await auth.signInWithEmailAndPassword("admin.pusat@sekolah.com", passInput);
+                
+                // Jika berhasil melewati pengecekan server:
                 const adminData = {
                     id: 'admin_master',
                     fullName: 'Administrator Pusat',
                     kelas: ['SEMUA'],
-                    mapel: ['ADMIN PUSAT'] // Kunci Role Admin
+                    mapel: ['ADMIN PUSAT'] 
                 };
+                
                 finalizeSession(adminData, "ADMIN PUSAT");
                 closeAdminModal();
-            } else {
-                alert("PIN Salah! Akses Ditolak.");
+                
+            } catch (error) {
+                console.error("Login Admin Gagal:", error);
+                alert("Kata Sandi/PIN Salah! Akses Ditolak.");
                 document.getElementById('input-admin-pin').value = '';
                 document.getElementById('input-admin-pin').focus();
+            } finally {
+                btnSubmit.innerHTML = originalText;
+                btnSubmit.disabled = false;
             }
         };
-
+        
         window.logout = function() {
             if(confirm('Keluar dari dashboard?')) {
                 // 1. Amankan API Key AI (dari Editor & Katalog) sebelum memori dihapus
