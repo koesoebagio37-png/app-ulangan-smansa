@@ -802,6 +802,7 @@
                 - Gunakan format LaTeX $...$ untuk semua rumus matematika agar tampilan rapi.
                 - Akhiri dengan kesimpulan tegas: "Maka, jawaban yang tepat adalah..."
 				- Berikan penjelasan mengapa jawaban tersebut benar dan tips cepat untuk menjawab tipe soal ini. Gunakan format Markdown untuk penekanan (bold) dan list.
+				- KHUSUS TABEL: Jika harus membuat tabel penjelasan, WAJIB gunakan format array LaTeX \\begin{array}{|c|c|} ... \\end{array} diapit tanda $ ... $. DILARANG KERAS menggunakan 'tabular' atau tag HTML <table>.
             `;
 
             // 5. Siapkan Payload (Mendukung Gambar/Multimodal)
@@ -899,6 +900,8 @@
 				2. WAJIB: Apit semua kode LaTeX dengan simbol dollar tunggal ($...$). Contoh: $x^2$, $\\frac{1}{2}$, $\\sqrt{4}$, $30^\\circ$.
 				3. LARANGAN KERAS: JANGAN gunakan karakter unicode/simbol cantik (seperti √, ², ½, ±, ×, ÷). Gunakan kode LaTeX-nya (\\sqrt, ^2, \\frac{1}{2}, \\pm, \\times, \\div).
 				4. JSON ESCAPING: Gunakan DOUBLE BACKSLASH (\\\\) untuk semua perintah LaTeX di dalam string JSON agar tidak error saat diparse (Contoh: "$\\frac{1}{2}$").
+				5. KHUSUS TABEL: Jika gambar mengandung TABEL, WAJIB konversi menjadi format matriks/array LaTeX menggunakan \\begin{array}{|c|c|} ... \\end{array} dan apit seluruh tabel tersebut dengan tanda $ ... $. DILARANG KERAS menggunakan 'tabular' atau tag HTML <table>.
+				. TEKS TABEL PANJANG: Jika teks judul kolom atau isi sel terlalu panjang (lebih dari 3-4 kata), Anda WAJIB memecahnya menjadi 2 baris array berurutan (tanpa \`\\\\hline\` di antaranya). Pastikan format kolom selalu menggunakan rata tengah (contoh: \`\\\\begin{array}{|c|c|c|}\`) agar isi data angka di bawahnya berada di posisi tengah secara proporsional.
 				
 				KUNCI JAWABAN (Mode: ${scanMode}):
 				- Tipe 'pg': index angka (0, 1, 2...).
@@ -1065,11 +1068,12 @@ async function processOptionsGeneration(naskah) {
         
         ATURAN FORMAT OUTPUT:
         1. WAJIB LATEX: Setiap rumus matematika, pecahan, akar, atau variabel wajib diapit tanda $. Contoh: $x^2$.
-        2. PG: Buat 5 opsi teks. Kunci adalah INDEX angka (0 s/d 4).
-        3. PGK (Kompleks): Buat 5 opsi teks. Kunci adalah ARRAY index (misal: [0, 2]). Tentukan minimal 2 jawaban benar.
-        4. BS (Benar/Salah): Buat 4 pernyataan logis terkait soal. Kunci adalah ARRAY string (["true", "false", ...]).
-        5. ESAI SINGKAT: Buat 1 Kunci Jawaban Singkat yang paling tepat (String).
-        6. Level Kognitif: Tentukan level Bloom (C1-C6).
+		2. KHUSUS TABEL: Jika membuat opsi berbentuk tabel, WAJIB gunakan format array LaTeX \\begin{array}{|c|c|} ... \\end{array} diapit tanda $ ... $. DILARANG KERAS menggunakan 'tabular'.
+        3. PG: Buat 5 opsi teks. Kunci adalah INDEX angka (0 s/d 4).
+        4. PGK (Kompleks): Buat 5 opsi teks. Kunci adalah ARRAY index (misal: [0, 2]). Tentukan minimal 2 jawaban benar.
+        5. BS (Benar/Salah): Buat 4 pernyataan logis terkait soal. Kunci adalah ARRAY string (["true", "false", ...]).
+        6. ESAI SINGKAT: Buat 1 Kunci Jawaban Singkat yang paling tepat (String).
+        7. Level Kognitif: Tentukan level Bloom (C1-C6).
         
         Kembalikan HANYA JSON murni format: 
         {"opsi": ["teks1", "teks2", ...], "kunci": ..., "level": "C1-C6"}`;
@@ -2189,6 +2193,8 @@ editorVisual.addEventListener('paste', async (e) => {
                             1. Rumus/simbol wajib format LaTeX MENTAH diapit tanda dolar ($...$). Contoh: $x^2$, $\\frac{1}{2}$.
                             2. DILARANG menggunakan karakter unicode cantik (√, ², ½).
                             3. JSON ESCAPING: Gunakan DOUBLE BACKSLASH (\\\\) untuk perintah LaTeX.
+							4. KHUSUS TABEL: Jika gambar mengandung TABEL, WAJIB konversi menjadi format matriks/array LaTeX menggunakan \\begin{array}{|c|c|} ... \\end{array} dan apit seluruh tabel tersebut dengan tanda $ ... $. DILARANG KERAS menggunakan 'tabular' atau tag HTML <table>.
+							5. TEKS TABEL PANJANG: Jika teks judul kolom atau isi sel terlalu panjang (lebih dari 3-4 kata), Anda WAJIB memecahnya menjadi 2 baris array berurutan (tanpa \`\\\\hline\` di antaranya). Pastikan format kolom selalu menggunakan rata tengah (contoh: \`\\\\begin{array}{|c|c|c|}\`) agar isi data angka di bawahnya berada di posisi tengah secara proporsional.
                             
                             KETENTUAN KUNCI JAWABAN (PENTING):
                             - Mode Scan: "${scanMode}"
@@ -3167,5 +3173,3 @@ async function bangunPetaKurikulum() {
     </div>
 </body>
 </html>
-
-
