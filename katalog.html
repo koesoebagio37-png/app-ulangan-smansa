@@ -194,17 +194,17 @@
                         <svg class="w-10 h-10 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
                     </div>
                     <h2 class="text-3xl font-serif font-bold text-slate-800 dark:text-white">Mulai Eksplorasi Soal</h2>
-                    <p class="text-gray-500 dark:text-gray-400 mt-2">Filter lengkap untuk menemukan soal yang tepat.</p>
+                    <p class="text-gray-500 dark:text-gray-400 mt-2">Pilih filter dasar untuk memuat koleksi bank soal.</p>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
                     <!-- Filter Controls -->
                     <div class="space-y-1"><label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">Mata Pelajaran</label><select id="sel-mapel" class="smart-select w-full bg-gray-50 dark:bg-cyber-900 border border-gray-300 dark:border-cyber-700 text-slate-800 dark:text-white text-sm rounded-xl p-3.5 focus:border-gold focus:ring-1 focus:ring-gold outline-none cursor-pointer hover:bg-white dark:hover:bg-cyber-800 transition-colors"><option value="">Pilih Mapel...</option></select></div>
-                    <div class="space-y-1"><label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">Kelas</label><select id="sel-kelas" class="smart-select w-full bg-gray-50 dark:bg-cyber-900 border border-gray-300 dark:border-cyber-700 text-slate-800 dark:text-white text-sm rounded-xl p-3.5 focus:border-gold focus:ring-1 focus:ring-gold outline-none cursor-pointer hover:bg-white dark:hover:bg-cyber-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled><option value="">Pilih Kelas...</option></select></div>
-                    <div class="space-y-1"><label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">Jenis Soal</label><select id="sel-tipe" class="smart-select w-full bg-gray-50 dark:bg-cyber-900 border border-gray-300 dark:border-cyber-700 text-slate-800 dark:text-white text-sm rounded-xl p-3.5 focus:border-gold focus:ring-1 focus:ring-gold outline-none cursor-pointer hover:bg-white dark:hover:bg-cyber-800 transition-colors"><option value="">Semua Tipe</option><option value="pg">Pilihan Ganda (PG)</option><option value="pgk">Pilihan Ganda Kompleks (PGK)</option><option value="bs">Benar Salah (BS)</option><option value="esai-singkat">Isian Singkat</option><option value="esai-kompleks">Uraian</option></select></div>
-                    <div class="space-y-1"><label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">Level Kognitif</label><select id="sel-level" class="smart-select w-full bg-gray-50 dark:bg-cyber-900 border border-gray-300 dark:border-cyber-700 text-slate-800 dark:text-white text-sm rounded-xl p-3.5 focus:border-gold focus:ring-1 focus:ring-gold outline-none cursor-pointer hover:bg-white dark:hover:bg-cyber-800 transition-colors"><option value="">Semua Level</option><option value="C1">C1 (Mengingat)</option><option value="C2">C2 (Memahami)</option><option value="C3">C3 (Menerapkan)</option><option value="C4">C4 (Menganalisis)</option><option value="C5">C5 (Mengevaluasi)</option><option value="C6">C6 (Mencipta)</option></select></div>
-                    <div class="space-y-1 md:col-span-2"><label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">BAB / Materi Pokok</label><select id="sel-bab" class="smart-select w-full bg-gray-50 dark:bg-cyber-900 border border-gray-300 dark:border-cyber-700 text-slate-800 dark:text-white text-sm rounded-xl p-3.5 focus:border-gold focus:ring-1 focus:ring-gold outline-none cursor-pointer hover:bg-white dark:hover:bg-cyber-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled><option value="">Pilih BAB...</option></select></div>
-                    <div class="space-y-1 md:col-span-2"><label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">Sub BAB (Opsional)</label><select id="sel-subbab" class="smart-select w-full bg-gray-50 dark:bg-cyber-900 border border-gray-300 dark:border-cyber-700 text-slate-800 dark:text-white text-sm rounded-xl p-3.5 focus:border-gold focus:ring-1 focus:ring-gold outline-none cursor-pointer hover:bg-white dark:hover:bg-cyber-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled><option value="">Semua Sub BAB</option></select></div>
+                    <div class="space-y-1"><label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">Kelas</label><select id="sel-kelas" class="smart-select w-full bg-gray-50 dark:bg-cyber-900 border border-gray-300 dark:border-cyber-700 text-slate-800 dark:text-white text-sm rounded-xl p-3.5 focus:border-gold focus:ring-1 focus:ring-gold outline-none cursor-pointer hover:bg-white dark:hover:bg-cyber-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled><option value="all">Semua Kelas</option></select></div>
+                    <div class="space-y-1"><label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">Jenis Soal</label><select id="sel-tipe" class="smart-select w-full bg-gray-50 dark:bg-cyber-900 border border-gray-300 dark:border-cyber-700 text-slate-800 dark:text-white text-sm rounded-xl p-3.5 focus:border-gold focus:ring-1 focus:ring-gold outline-none cursor-pointer hover:bg-white dark:hover:bg-cyber-800 transition-colors"><option value="all">Semua Tipe</option><option value="pg">Pilihan Ganda (PG)</option><option value="pgk">Pilihan Ganda Kompleks (PGK)</option><option value="bs">Benar Salah (BS)</option><option value="esai-singkat">Isian Singkat</option><option value="esai-kompleks">Uraian</option></select></div>
+                    <div class="space-y-1"><label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">Level Kognitif</label><select id="sel-level" class="smart-select w-full bg-gray-50 dark:bg-cyber-900 border border-gray-300 dark:border-cyber-700 text-slate-800 dark:text-white text-sm rounded-xl p-3.5 focus:border-gold focus:ring-1 focus:ring-gold outline-none cursor-pointer hover:bg-white dark:hover:bg-cyber-800 transition-colors"><option value="all">Semua Level</option><option value="C1">C1 (Mengingat)</option><option value="C2">C2 (Memahami)</option><option value="C3">C3 (Menerapkan)</option><option value="C4">C4 (Menganalisis)</option><option value="C5">C5 (Mengevaluasi)</option><option value="C6">C6 (Mencipta)</option></select></div>
+                    <div class="space-y-1"><label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">BAB / Materi Pokok</label><select id="sel-bab" class="smart-select w-full bg-gray-50 dark:bg-cyber-900 border border-gray-300 dark:border-cyber-700 text-slate-800 dark:text-white text-sm rounded-xl p-3.5 focus:border-gold focus:ring-1 focus:ring-gold outline-none cursor-pointer hover:bg-white dark:hover:bg-cyber-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled><option value="all">Semua BAB</option></select></div>
+                    <div class="space-y-1"><label class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">Sub BAB (Opsional)</label><select id="sel-subbab" class="smart-select w-full bg-gray-50 dark:bg-cyber-900 border border-gray-300 dark:border-cyber-700 text-slate-800 dark:text-white text-sm rounded-xl p-3.5 focus:border-gold focus:ring-1 focus:ring-gold outline-none cursor-pointer hover:bg-white dark:hover:bg-cyber-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled><option value="all">Semua Sub BAB</option></select></div>
                 </div>
 
                 <button id="btn-show-questions" class="w-full bg-slate-900 dark:bg-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-slate-800 dark:hover:bg-indigo-700 transform hover:-translate-y-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2" disabled>
@@ -231,20 +231,37 @@
                     </div>
                 </div>
                 
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 md:gap-3 flex-wrap justify-end">
+                    <!-- PENCARIAN MANUAL (DIPINDAHKAN & DIPERBARUI) -->
+                    <div class="flex items-center shadow-sm">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                                <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            </div>
+                            <input type="text" id="input-keyword" class="w-32 md:w-48 pl-8 pr-3 py-1.5 bg-gray-50 dark:bg-cyber-900 border border-gray-200 dark:border-cyber-600 border-r-0 text-slate-800 dark:text-white text-xs rounded-l-lg focus:border-gold focus:ring-1 focus:ring-gold outline-none transition-colors" placeholder="Cari teks soal...">
+                        </div>
+                        <button id="btn-search-keyword" class="bg-slate-800 dark:bg-indigo-600 hover:bg-slate-700 dark:hover:bg-indigo-500 text-white px-3 py-1.5 rounded-r-lg border border-slate-800 dark:border-indigo-600 text-xs font-bold transition-colors">Cari</button>
+                    </div>
+
                     <!-- REFRESH BUTTON -->
                     <button id="btn-refresh-grid" onclick="window.refreshGridData()" class="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-gray-300 hover:text-gold transition-colors bg-gray-100 dark:bg-cyber-700 hover:bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-cyber-600 shadow-sm" title="Tarik soal terbaru dari Editor">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                         <span class="hidden sm:inline">Refresh Soal</span>
                     </button>
                     
+                    <!-- SELECT ALL BUTTON -->
+                    <button id="btn-select-all" onclick="window.selectAllGrid()" class="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-gray-300 hover:text-gold transition-colors bg-gray-100 dark:bg-cyber-700 hover:bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-cyber-600 shadow-sm" title="Pilih semua soal yang sedang tampil">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span class="hidden sm:inline">Pilih Semua</span>
+                    </button>
+
                     <!-- TOGGLE KUNCI JAWABAN -->
                     <label class="flex items-center gap-2 cursor-pointer bg-gray-50 dark:bg-cyber-700 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-cyber-600 hover:border-gold transition select-none shadow-sm">
                         <input type="checkbox" id="toggle-key-visibility" class="w-4 h-4 text-gold rounded focus:ring-gold accent-gold">
                         <span class="text-xs font-bold text-slate-700 dark:text-gray-300">👁️ Tampilkan Kunci</span>
                     </label>
 
-                    <div class="text-xs text-gray-500 dark:text-gray-400 font-bold bg-gray-100 dark:bg-cyber-700 px-3 py-1.5 rounded-full">
+                    <div class="text-xs text-gray-500 dark:text-gray-400 font-bold bg-gray-100 dark:bg-cyber-700 px-3 py-1.5 rounded-full shadow-sm">
                         <span id="result-count">0</span> Soal
                     </div>
                 </div>
@@ -267,7 +284,7 @@
         </div>
     </main>
 
-    <!-- AI FLOATING PANEL (NEW & DRAGGABLE/RESIZABLE) -->
+    <!-- AI FLOATING PANEL (DRAGGABLE/RESIZABLE) -->
     <div id="ai-panel" class="fixed bottom-4 right-4 w-[95vw] md:w-[600px] max-h-[85vh] bg-white dark:bg-cyber-800 rounded-2xl shadow-2xl border border-gold/50 z-50 hidden flex flex-col opacity-0 scale-95 transition-all duration-200 backdrop-blur-xl bg-opacity-95 dark:bg-opacity-95" style="box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
         <!-- Header (Draggable Area) -->
         <div id="ai-panel-header" class="p-4 border-b border-gray-200 dark:border-cyber-600 bg-gradient-to-r from-gold/20 to-transparent flex justify-between items-center rounded-t-2xl select-none" title="Tahan dan geser untuk memindahkan">
@@ -281,7 +298,7 @@
             <div class="flex items-center gap-2">
                 <!-- Maximize Toggle -->
                 <button onclick="window.toggleAiMaximize()" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-cyber-700 text-gray-400 hover:text-white flex items-center justify-center transition-colors" title="Layar Penuh">
-                    <svg id="icon-max" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+                    <svg id="icon-max" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5M4 16v4m0 0h4m-4 0l5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
                     <svg id="icon-min" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 10h-4m0 0v-4m0 4l4-4m-10 8h4m0 0v4m0-4l-4 4"></path></svg>
                 </button>
                 <!-- Close Button -->
@@ -355,8 +372,21 @@
         </div>
         <div class="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-cyber-900/50" id="cart-items"></div>
         <div class="p-5 bg-white dark:bg-cyber-800 border-t border-gray-200 dark:border-cyber-700">
-            <div class="flex justify-between text-sm font-bold text-gray-600 dark:text-gray-400 mb-4"><span>Total Soal:</span><span id="cart-total">0</span></div>
-            <button id="checkout-btn" class="w-full bg-gold hover:bg-yellow-600 text-slate-900 font-bold py-3 rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed" disabled>PROSES KE ADMIN UJIAN</button>
+            <div class="flex justify-between text-sm font-bold text-gray-600 dark:text-gray-400 mb-3"><span>Total Soal:</span><span id="cart-total">0</span></div>
+            
+            <!-- OPTION EXPORT WORD -->
+            <div class="mb-4 bg-gray-50 dark:bg-cyber-900/50 p-2.5 rounded-lg border border-gray-200 dark:border-cyber-600">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="export-with-pembahasan" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 border-gray-300">
+                    <span class="text-xs font-bold text-gray-700 dark:text-gray-300">Sertakan Pembahasan (Khusus Word)</span>
+                </label>
+            </div>
+
+            <button id="checkout-btn" class="w-full bg-gold hover:bg-yellow-600 text-slate-900 font-bold py-3 rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed mb-2" disabled>PROSES KE ADMIN UJIAN</button>
+            <button id="export-word-btn" onclick="window.exportToWord()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                UNDUH KE MS. WORD
+            </button>
         </div>
     </div>
     
@@ -372,14 +402,11 @@
                 <div>
                     <label class="block text-sm font-bold text-gray-600 dark:text-gray-400 mb-1">Target Kelas</label>
                     <select id="package-class" class="w-full border border-gray-300 dark:border-cyber-600 dark:bg-cyber-900 dark:text-white rounded-lg p-2.5 bg-white">
-                        <option value="X">Kelas X</option>
-                        <option value="XI">Kelas XI</option>
-                        <option value="XII">Kelas XII</option>
-                        <option value="Semua">Semua Kelas</option>
+                        <!-- Diisi secara dinamis oleh JavaScript -->
                     </select>
                 </div>
             </div>
-            <!-- FITUR BARU: PILIHAN TUJUAN -->
+            <!-- PILIHAN TUJUAN -->
                 <div class="bg-gray-50 dark:bg-cyber-900/50 p-4 rounded-xl border border-gray-200 dark:border-cyber-700 mt-4">
                     <label class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-3">Tujuan Paket Soal</label>
                     <div class="space-y-3">
@@ -399,7 +426,7 @@
                         </label>
                     </div>
 
-                    <!-- Dropdown Event (Hidden by default) -->
+                    <!-- Dropdown Event -->
                     <div id="event-select-container" class="mt-4 hidden pl-7 border-l-2 border-gold">
                         <label class="block text-xs font-bold text-gray-500 mb-1">Pilih Event Ujian</label>
                         <select id="pkg-event" class="w-full bg-white dark:bg-cyber-800 border border-gray-200 dark:border-cyber-600 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-gold outline-none dark:text-white">
@@ -450,6 +477,7 @@
         // GLOBAL VARS (INTEGRATION)
         let currentGuruId = null;
         let currentGuruMapel = null;
+        let currentGuruKelas = []; // ARRAY KELAS AMPU GURU
         let keysMap = {}; 
         let activeQuestionId = null; 
         
@@ -459,6 +487,8 @@
             kelas: document.getElementById('sel-kelas'),
             bab: document.getElementById('sel-bab'),
             subbab: document.getElementById('sel-subbab'),
+            keyword: document.getElementById('input-keyword'), // Referensi input kata kunci baru
+            btnSearch: document.getElementById('btn-search-keyword'), // Referensi tombol cari
             tipe: document.getElementById('sel-tipe'),    
             level: document.getElementById('sel-level'), 
             btnShow: document.getElementById('btn-show-questions'),
@@ -534,6 +564,22 @@
             const tokenMapel = localStorage.getItem('cbt_user_mapel');
             currentGuruId = localStorage.getItem('cbt_user_id');
             currentGuruMapel = tokenMapel;
+            
+            // Ambil data kelas ampu dari LocalStorage
+            try {
+                const rawKelas = localStorage.getItem('cbt_user_kelas');
+                if (rawKelas) {
+                    if (rawKelas.startsWith('[')) {
+                        currentGuruKelas = JSON.parse(rawKelas);
+                    } else {
+                        currentGuruKelas = rawKelas.split(',').map(s => s.trim());
+                    }
+                } else {
+                    currentGuruKelas = [];
+                }
+            } catch(e) { 
+                currentGuruKelas = []; 
+            }
 
             if (user) {
                 if (tokenMapel) {
@@ -628,6 +674,36 @@
             } catch (e) { alert("Gagal memuat: " + e.message); els.loading.classList.add('hidden'); }
         }
 
+        function updateFilteredQuestions() {
+            const m = els.mapel.value;
+            const k = els.kelas.value;
+            const b = els.bab.value;
+            const s = els.subbab.value;
+            const kw = els.keyword.value.toLowerCase().trim(); // Ambil kata kunci
+            const t = els.tipe.value;
+            const l = els.level.value;
+
+            filteredQuestions = allQuestions.filter(q => {
+                const matchMapel = q.metadata.mapel === m;
+                const matchKelas = k === 'all' || q.metadata.kelas === k;
+                const matchBab = b === 'all' || q.metadata.bab === b;
+                const matchSub = s === 'all' || !s || q.metadata.subbab === s;
+                
+                // Filter pencarian kata kunci pada naskah soal
+                const matchKeyword = !kw || 
+                    (q.naskah && q.naskah.toLowerCase().includes(kw)) || 
+                    (q.naskahBawah && q.naskahBawah.toLowerCase().includes(kw));
+
+                const matchTipe = t === 'all' || !t || q.type === t;
+                const matchLevel = l === 'all' || !l || q.metadata.kesulitan === l;
+
+                return matchMapel && matchKelas && matchBab && matchSub && matchKeyword && matchTipe && matchLevel;
+            });
+
+            els.count.textContent = filteredQuestions.length;
+            renderGrid();
+        }
+
         // --- NEW: REFRESH GRID DATA WITHOUT LOSING STATE ---
         window.refreshGridData = async () => {
             const btn = document.getElementById('btn-refresh-grid');
@@ -636,29 +712,7 @@
             
             try {
                 await fetchAllQuestionsFromDB();
-                
-                // Re-apply filters using currently selected dropdown values
-                const m = els.mapel.value;
-                const k = els.kelas.value;
-                const b = els.bab.value;
-                const s = els.subbab.value;
-                const t = els.tipe.value;
-                const l = els.level.value;
-
-                filteredQuestions = allQuestions.filter(q => {
-                    const matchMapel = q.metadata.mapel === m;
-                    const matchKelas = q.metadata.kelas === k;
-                    const matchBab = q.metadata.bab === b;
-                    const matchSub = !s || q.metadata.subbab === s;
-                    const matchTipe = !t || q.type === t;
-                    const matchLevel = !l || q.metadata.kesulitan === l;
-
-                    return matchMapel && matchKelas && matchBab && matchSub && matchTipe && matchLevel;
-                });
-
-                els.count.textContent = filteredQuestions.length;
-                renderGrid(); // Re-render the grid with new data
-                
+                updateFilteredQuestions();
                 showToast("Data soal berhasil diperbarui!");
             } catch (e) {
                 alert("Gagal memperbarui data: " + e.message);
@@ -666,6 +720,18 @@
                 if (icon) icon.classList.remove('animate-spin');
             }
         };
+
+        // Pencarian manual saat tombol Cari ditekan atau Enter
+        els.btnSearch.addEventListener('click', () => {
+            updateFilteredQuestions();
+        });
+
+        els.keyword.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                updateFilteredQuestions();
+            }
+        });
 
         // --- CASCADING DROPDOWN LOGIC ---
         function getUnique(data, key) { return [...new Set(data.map(q => q.metadata[key]))].sort(); }
@@ -692,24 +758,41 @@
             const m = els.mapel.value;
             if(!m) { resetDropdowns(['kelas', 'bab', 'subbab']); return; }
             const filtered = allQuestions.filter(q => q.metadata.mapel === m);
+            
             const kelas = getUnique(filtered, 'kelas');
-            els.kelas.innerHTML = '<option value="">Pilih Kelas...</option>';
+            els.kelas.innerHTML = '<option value="all">Semua Kelas</option>';
             kelas.forEach(k => els.kelas.add(new Option(k, k)));
             els.kelas.disabled = false;
-            resetDropdowns(['bab', 'subbab']);
+
+            const babs = getUnique(filtered, 'bab');
+            els.bab.innerHTML = '<option value="all">Semua BAB</option>';
+            babs.forEach(b => els.bab.add(new Option(b, b)));
+            els.bab.disabled = false;
+
+            const subs = getUnique(filtered, 'subbab').filter(s => s);
+            els.subbab.innerHTML = '<option value="all">Semua Sub BAB</option>';
+            subs.forEach(s => els.subbab.add(new Option(s, s)));
+            els.subbab.disabled = false;
+
             checkButtonState();
         });
 
         els.kelas.addEventListener('change', () => {
             const m = els.mapel.value;
             const k = els.kelas.value;
-            if(!k) { resetDropdowns(['bab', 'subbab']); return; }
-            const filtered = allQuestions.filter(q => q.metadata.mapel === m && q.metadata.kelas === k);
+            if(!m) { resetDropdowns(['bab', 'subbab']); return; }
+            const filtered = allQuestions.filter(q => q.metadata.mapel === m && (k === 'all' || q.metadata.kelas === k));
+            
             const babs = getUnique(filtered, 'bab');
-            els.bab.innerHTML = '<option value="">Pilih BAB...</option>';
+            els.bab.innerHTML = '<option value="all">Semua BAB</option>';
             babs.forEach(b => els.bab.add(new Option(b, b)));
             els.bab.disabled = false;
-            resetDropdowns(['subbab']);
+
+            const subs = getUnique(filtered, 'subbab').filter(s => s);
+            els.subbab.innerHTML = '<option value="all">Semua Sub BAB</option>';
+            subs.forEach(s => els.subbab.add(new Option(s, s)));
+            els.subbab.disabled = false;
+            
             checkButtonState();
         });
 
@@ -717,10 +800,15 @@
             const m = els.mapel.value;
             const k = els.kelas.value;
             const b = els.bab.value;
-            if(!b) { resetDropdowns(['subbab']); return; }
-            const filtered = allQuestions.filter(q => q.metadata.mapel === m && q.metadata.kelas === k && q.metadata.bab === b);
+            if(!m) { resetDropdowns(['subbab']); return; }
+            const filtered = allQuestions.filter(q => 
+                q.metadata.mapel === m && 
+                (k === 'all' || q.metadata.kelas === k) &&
+                (b === 'all' || q.metadata.bab === b)
+            );
+            
             const subs = getUnique(filtered, 'subbab').filter(s => s); 
-            els.subbab.innerHTML = '<option value="">Semua Sub BAB</option>';
+            els.subbab.innerHTML = '<option value="all">Semua Sub BAB</option>';
             if (subs.length > 0) {
                 subs.forEach(s => els.subbab.add(new Option(s, s)));
                 els.subbab.disabled = false;
@@ -731,15 +819,14 @@
         });
 
         function resetDropdowns(types) {
-            if(types.includes('kelas')) { els.kelas.innerHTML = '<option value="">Pilih Kelas...</option>'; els.kelas.disabled = true; }
-            if(types.includes('bab')) { els.bab.innerHTML = '<option value="">Pilih BAB...</option>'; els.bab.disabled = true; }
-            if(types.includes('subbab')) { els.subbab.innerHTML = '<option value="">Semua Sub BAB</option>'; els.subbab.disabled = true; }
+            if(types.includes('kelas')) { els.kelas.innerHTML = '<option value="all">Semua Kelas</option>'; els.kelas.disabled = true; }
+            if(types.includes('bab')) { els.bab.innerHTML = '<option value="all">Semua BAB</option>'; els.bab.disabled = true; }
+            if(types.includes('subbab')) { els.subbab.innerHTML = '<option value="all">Semua Sub BAB</option>'; els.subbab.disabled = true; }
             checkButtonState();
         }
 
         function checkButtonState() {
-            const ready = els.mapel.value && els.kelas.value && els.bab.value;
-            els.btnShow.disabled = !ready;
+            els.btnShow.disabled = !els.mapel.value;
         }
 
         // --- VIEW SWITCHING LOGIC ---
@@ -748,25 +835,12 @@
             const k = els.kelas.value;
             const b = els.bab.value;
             const s = els.subbab.value;
-            const t = els.tipe.value;
-            const l = els.level.value;
 
-            filteredQuestions = allQuestions.filter(q => {
-                const matchMapel = q.metadata.mapel === m;
-                const matchKelas = q.metadata.kelas === k;
-                const matchBab = q.metadata.bab === b;
-                const matchSub = !s || q.metadata.subbab === s;
-                const matchTipe = !t || q.type === t;
-                const matchLevel = !l || q.metadata.kesulitan === l;
-
-                return matchMapel && matchKelas && matchBab && matchSub && matchTipe && matchLevel;
-            });
-
-            els.breadcrumb.textContent = `${m} > KELAS ${k}`;
-            els.babTitle.textContent = s ? `${b} (${s})` : b;
-            els.count.textContent = filteredQuestions.length;
-
-            renderGrid(); 
+            els.breadcrumb.textContent = `${m} > KELAS ${k === 'all' ? 'SEMUA' : k}`;
+            els.babTitle.textContent = b === 'all' ? 'Semua Materi/BAB' : (s !== 'all' && s ? `${b} (${s})` : b);
+            
+            els.keyword.value = ''; // Reset kata kunci saat buka grid
+            updateFilteredQuestions(); 
 
             els.viewFilter.classList.add('opacity-0', 'pointer-events-none'); 
             setTimeout(() => { els.viewGrid.classList.remove('translate-x-full'); }, 100);
@@ -1035,6 +1109,53 @@
             setTimeout(() => t.classList.add('translate-y-20'), 3000);
         }
 
+        // --- NEW: SELECT ALL LOGIC ---
+        window.selectAllGrid = () => {
+            if (filteredQuestions.length === 0) return;
+            
+            // Periksa apakah semua soal yang tampil sudah ada di keranjang
+            let allSelected = true;
+            for (let q of filteredQuestions) {
+                if (!cart.has(q.id)) {
+                    allSelected = false;
+                    break;
+                }
+            }
+
+            // Lakukan aksi (pilih semua / hapus semua)
+            filteredQuestions.forEach(q => {
+                if (allSelected) {
+                    cart.delete(q.id);
+                } else {
+                    cart.add(q.id);
+                }
+                
+                // Update UI tombol setiap kartu secara instan
+                const btn = document.getElementById(`btn-cart-${q.id}`);
+                if (btn) {
+                    if (!allSelected) {
+                        btn.classList.remove('bg-gray-100', 'dark:bg-cyber-700', 'text-gray-400', 'dark:text-gray-300', 'hover:bg-gray-200', 'border-gray-200');
+                        btn.classList.add('selected', 'bg-gold', 'text-white', 'shadow-md', 'border-gold', 'transform', 'scale-110');
+                        btn.innerHTML = '✓';
+                    } else {
+                        btn.classList.remove('selected', 'bg-gold', 'text-white', 'shadow-md', 'border-gold', 'transform', 'scale-110');
+                        btn.classList.add('bg-gray-100', 'dark:bg-cyber-700', 'text-gray-400', 'dark:text-gray-300', 'hover:bg-gray-200', 'border-gray-200');
+                        btn.innerHTML = '+';
+                    }
+                }
+            });
+
+            updateCartUI();
+            
+            // Ubah teks tombol berdasarkan kondisinya
+            const btnSelectAllText = document.querySelector('#btn-select-all span');
+            if (btnSelectAllText) {
+                btnSelectAllText.innerText = allSelected ? "Pilih Semua" : "Batal Pilih";
+            }
+
+            showToast(allSelected ? "Batal memilih semua soal." : `${filteredQuestions.length} soal berhasil dipilih!`);
+        };
+
         // --- CART LOGIC ---
         window.toggleCart = (id) => {
             const targetQ = allQuestions.find(q => q.id === id);
@@ -1080,6 +1201,28 @@
             updateCartUI();
         };
 
+        // Fungsi untuk mengisi kelas di modal Checkout
+        function populateCheckoutClasses() {
+            const select = document.getElementById('package-class');
+            select.innerHTML = '';
+            
+            if (currentGuruMapel === 'ADMIN PUSAT' || currentGuruKelas.includes('SEMUA')) {
+                select.innerHTML = `
+                    <option value="X">Kelas X</option>
+                    <option value="XI">Kelas XI</option>
+                    <option value="XII">Kelas XII</option>
+                    <option value="Semua">Semua Kelas</option>
+                `;
+            } else {
+                currentGuruKelas.forEach(c => {
+                    select.add(new Option(c, c));
+                });
+                if (currentGuruKelas.length > 1) {
+                    select.add(new Option('Semua Kelas Ampuan', 'Semua'));
+                }
+            }
+        }
+
         function updateCartUI() {
             const count = cart.size;
             document.getElementById('cart-count').innerText = count;
@@ -1088,7 +1231,17 @@
             document.getElementById('cart-total').innerText = count;
             
             const btn = document.getElementById('checkout-btn');
-            btn.disabled = count === 0; btn.innerText = count === 0 ? "PILIH SOAL DULU" : `PROSES (${count})`;
+            const exportBtn = document.getElementById('export-word-btn');
+            
+            if (count === 0) {
+                btn.disabled = true;
+                btn.innerText = "PILIH SOAL DULU";
+                exportBtn.disabled = true;
+            } else {
+                btn.disabled = false;
+                btn.innerText = `PROSES (${count})`;
+                exportBtn.disabled = false;
+            }
 
             const list = document.getElementById('cart-items');
             list.innerHTML = '';
@@ -1097,6 +1250,107 @@
                 if(q) list.innerHTML += `<div class="p-3 bg-white dark:bg-cyber-800 rounded border border-gray-200 dark:border-cyber-600 flex justify-between items-start text-sm shadow-sm"><div class="line-clamp-2 flex-1 mr-2 text-slate-700 dark:text-gray-300">${q.naskah}</div><button onclick="window.toggleCart('${id}')" class="text-red-400 hover:text-red-600 font-bold px-2">&times;</button></div>`;
             });
         }
+        
+        // --- NEW: EXPORT TO MS WORD ---
+        window.exportToWord = () => {
+            if (cart.size === 0) return alert("Keranjang kosong!");
+            
+            const includePembahasan = document.getElementById('export-with-pembahasan').checked;
+
+            let htmlContent = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head>
+                    <meta charset='utf-8'>
+                    <style>
+                        body { font-family: 'Times New Roman', serif; font-size: 12pt; }
+                        .question { margin-bottom: 20px; }
+                        .options { margin-left: 20px; margin-top: 5px; }
+                        .option { margin-bottom: 5px; }
+                        img { max-width: 100%; height: auto; }
+                        table { border-collapse: collapse; width: 100%; }
+                        th, td { border: 1px solid black; padding: 5px; }
+                    </style>
+                </head>
+                <body>
+                    <h2 style="text-align:center;">DOKUMEN SOAL</h2>
+                    <br>
+            `;
+
+            let qNumber = 1;
+            cart.forEach(id => {
+                const q = allQuestions.find(x => x.id === id);
+                if (!q) return;
+
+                // Naskah (Use raw naskah to preserve MathJax syntax)
+                let qText = q.naskah ? q.naskah.replace(/\n/g, '<br>') : '';
+                let qImage = q.naskahImage ? `<br><img src="${q.naskahImage}"><br>` : '';
+                
+                htmlContent += `<div class="question">`;
+                htmlContent += `<p><b>${qNumber}.</b> ${qText}</p>`;
+                htmlContent += qImage;
+
+                // Naskah Bawah
+                if (q.naskahBawah) {
+                    htmlContent += `<p>${q.naskahBawah.replace(/\n/g, '<br>')}</p>`;
+                }
+
+                const keyData = keysMap[q.id];
+
+                // Opsi
+                if (q.type === 'pg' || q.type === 'pgk') {
+                    htmlContent += `<div class="options">`;
+                    (q.opsi || []).forEach((opt, idx) => {
+                        const letter = String.fromCharCode(65 + idx);
+                        let isKey = false;
+                        
+                        if (q.type === 'pg' && keyData == idx) isKey = true;
+                        if (q.type === 'pgk' && Array.isArray(keyData) && keyData.includes(idx)) isKey = true;
+                        
+                        let optText = opt.text ? opt.text.replace(/\n/g, '<br>') : '';
+                        let optImg = opt.imageBase64 ? `<br><img src="${opt.imageBase64}" style="max-height:100px;">` : '';
+                        
+                        let displayLabel = isKey ? `<b style="color:red; text-decoration:underline;">${letter}.</b>` : `<b>${letter}.</b>`;
+                        htmlContent += `<div class="option">${displayLabel} ${optText} ${optImg}</div>`;
+                    });
+                    htmlContent += `</div>`;
+                } else if (q.type === 'bs') {
+                    htmlContent += `<br><table><thead><tr><th>Pernyataan</th><th>Benar/Salah</th></tr></thead><tbody>`;
+                    (q.opsi || []).forEach((opt, idx) => {
+                        let keyVal = (keyData && keyData[idx]) ? keyData[idx] : '';
+                        let displayKey = "";
+                        if (keyVal === "true" || keyVal === true) displayKey = "B";
+                        else if (keyVal === "false" || keyVal === false) displayKey = "S";
+                        htmlContent += `<tr><td>${opt.text}</td><td style="text-align:center; font-weight:bold; color:red;">${displayKey}</td></tr>`;
+                    });
+                    htmlContent += `</tbody></table>`;
+                } else if (q.type === 'esai-singkat') {
+                    htmlContent += `<p><b>Kunci:</b> <span style="color:red;">${keyData || '-'}</span></p>`;
+                }
+
+                // Pembahasan
+                if (q.pembahasan && includePembahasan) {
+                     htmlContent += `<br><p><b>Pembahasan:</b><br>${q.pembahasan.replace(/\n/g, '<br>')}</p>`;
+                }
+
+                htmlContent += `</div><br>`;
+                qNumber++;
+            });
+
+            htmlContent += `</body></html>`;
+
+            // Create Blob and trigger download
+            const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Kumpulan_Soal_${new Date().toISOString().split('T')[0]}.doc`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            showToast("Dokumen MS Word berhasil diunduh.");
+        };
 
         // --- DRAGGABLE PANEL LOGIC (OPTIMIZED) ---
         function makeElementDraggable(header, el) {
@@ -1530,7 +1784,13 @@ Berikan penjelasan mengapa jawaban tersebut benar dan tips cepat untuk menjawab 
         const drawer = document.getElementById('cart-drawer');
         document.getElementById('cart-btn').onclick = () => drawer.classList.remove('translate-x-full');
         document.getElementById('close-cart').onclick = () => drawer.classList.add('translate-x-full');
-        document.getElementById('checkout-btn').onclick = () => { drawer.classList.add('translate-x-full'); document.getElementById('checkout-modal').classList.remove('hidden'); };
+        
+        document.getElementById('checkout-btn').onclick = () => { 
+            drawer.classList.add('translate-x-full'); 
+            populateCheckoutClasses(); // Update dropdown class based on teacher's classes
+            document.getElementById('checkout-modal').classList.remove('hidden'); 
+        };
+        
         document.getElementById('cancel-checkout').onclick = () => document.getElementById('checkout-modal').classList.add('hidden');
 
 		document.getElementById('confirm-checkout').onclick = async () => {
@@ -1575,7 +1835,7 @@ Berikan penjelasan mengapa jawaban tersebut benar dan tips cepat untuk menjawab 
                 await setDoc(doc(db, 'ujian_terjadwal', draftId), {
                     kodeUjian: draftId, 
                     namaUjian: finalName,
-                    targetKelas: targetClass === 'Semua' ? ['X','XI','XII'] : [targetClass],
+                    targetKelas: targetClass === 'Semua' ? (currentGuruMapel === 'ADMIN PUSAT' ? ['X','XI','XII'] : currentGuruKelas) : [targetClass],
                     targetSemuaKelas: targetClass === 'Semua',
                     durasiMenit: 60, // Default 60 menit
                     maxCurang: 3, 
