@@ -17,7 +17,8 @@
                     colors: { 
                         'deep': '#0f172a',
                         'surface': '#1e293b',
-                        'primary': '#0ea5e9'
+                        'primary': '#0ea5e9',
+                        'cyber': { 800: '#1e293b' }
                     }
                 }
             }
@@ -38,13 +39,21 @@
         .zoomable-image { cursor: zoom-in; transition: transform 0.2s; }
         .zoomable-image:hover { transform: scale(1.02); }
 
-        /* Styles for Deep Zoom Viewer */
-        #image-viewer-content {
-            transform-origin: center center;
-            transition: transform 0.1s ease-out;
-            cursor: grab;
-        }
+        #image-viewer-content { transform-origin: center center; transition: transform 0.1s ease-out; cursor: grab; }
         #image-viewer-content:active { cursor: grabbing; }
+
+        /* Sembunyikan panah di input number */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+        .paste-receiver { transition: all 0.2s; }
+        .paste-receiver:focus { transform: scale(1.05); z-index: 10; box-shadow: 0 0 15px rgba(14, 165, 233, 0.4); }
+        .paste-highlight { animation: flashGreen 1s ease-out; }
+        
+        @keyframes flashGreen {
+            0% { background-color: rgba(16, 185, 129, 0.5); }
+            100% { background-color: transparent; }
+        }
 
         @media print {
             body * { visibility: hidden; }
@@ -54,13 +63,13 @@
                 position: absolute; left: 0; top: 0; width: 100%;
                 background: white; color: black; z-index: 9999;
             }
-            nav, main, #correction-modal, #login-overlay, #image-viewer-modal, #weight-modal { display: none !important; }
+            nav, main, #correction-modal, #login-overlay, #image-viewer-modal, #weight-modal, #custom-col-modal { display: none !important; }
         }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <!-- LOGIN OVERLAY (UPDATED FOR PORTAL INTEGRATION) -->
+    <!-- LOGIN OVERLAY -->
     <div id="login-overlay" class="fixed inset-0 z-[100] bg-gray-100 dark:bg-deep flex items-center justify-center p-4">
         <div class="card p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200 dark:border-gray-700">
             <div class="text-center mb-8">
@@ -69,13 +78,11 @@
                 <p class="text-sm opacity-70">Sistem Pengolahan Terpadu</p>
             </div>
             
-            <!-- Loading State for Auto Login -->
             <div id="login-loading" class="text-center hidden">
                 <svg class="animate-spin h-8 w-8 text-indigo-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                 <p class="text-indigo-600 font-bold animate-pulse">Menghubungkan ke Portal...</p>
             </div>
 
-            <!-- Manual Login Form (Hidden by default, shown if no portal session) -->
             <form id="admin-login-form" class="space-y-4 hidden">
                 <p class="text-center text-red-500 text-sm font-bold bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
                     Akses Ditolak: Tidak ada sesi Portal Akademik.
@@ -88,10 +95,8 @@
         </div>
     </div>
 
-    <!-- ADVANCED IMAGE VIEWER MODAL (DEEP ZOOM) -->
+    <!-- IMAGE VIEWER MODAL -->
     <div id="image-viewer-modal" class="fixed inset-0 z-[200] hidden bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center overflow-hidden">
-        
-        <!-- Toolbar -->
         <div class="absolute top-4 left-1/2 transform -translate-x-1/2 flex gap-4 z-50 bg-black/50 px-6 py-2 rounded-full border border-white/20 backdrop-blur-md">
             <button onclick="zoomOut()" class="text-white hover:text-primary transition-colors text-xl font-bold p-2" title="Zoom Out (-)">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
@@ -101,47 +106,81 @@
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
             </button>
             <div class="w-px bg-white/20 mx-2"></div>
-            <button onclick="resetZoom()" class="text-white hover:text-primary transition-colors text-sm font-bold flex items-center gap-1" title="Reset">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                Reset
+            <button onclick="rotateImage()" class="text-white hover:text-primary transition-colors text-sm font-bold flex items-center gap-1 p-2" title="Putar Gambar">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Putar
             </button>
+            <div class="w-px bg-white/20 mx-2"></div>
+            <button onclick="resetZoom()" class="text-white hover:text-primary transition-colors text-sm font-bold flex items-center gap-1 p-2" title="Kembalikan ke awal">Reset</button>
         </div>
-
         <button onclick="closeImageViewer()" class="absolute top-4 right-4 text-white/70 hover:text-red-500 z-50 p-2 bg-black/20 rounded-full transition-all">
             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
-
-        <!-- Image Container -->
         <div id="image-container" class="w-full h-full flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing" 
              onmousedown="startDrag(event)" onmousemove="drag(event)" onmouseup="endDrag()" onmouseleave="endDrag()" onwheel="handleWheel(event)">
             <img id="image-viewer-content" class="max-w-[90%] max-h-[90%] object-contain shadow-2xl pointer-events-none select-none">
         </div>
-        
-        <p class="absolute bottom-4 text-white/30 text-xs pointer-events-none">Scroll mouse untuk zoom, klik & geser untuk melihat detail</p>
     </div>
 
-    <!-- MODAL PENGATURAN BOBOT (UPDATED: Support Decimal) -->
-    <div id="weight-modal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <!-- MODAL PENGATURAN BOBOT -->
+    <div id="weight-modal" class="fixed inset-0 z-[60] hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="card w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
             <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-surface flex justify-between items-center">
-                <h3 class="font-bold text-lg text-gray-800 dark:text-white">Pengaturan Bobot Ujian</h3>
+                <h3 class="font-bold text-lg text-gray-800 dark:text-white">Pengaturan Bobot (Ujian CBT)</h3>
                 <button onclick="closeWeightModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-white">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
             <div class="p-6 overflow-y-auto bg-white dark:bg-deep space-y-4">
-                <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl text-sm text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 mb-4">
-                    <p class="font-bold">Info Perhitungan:</p>
-                    <p>Nilai Akhir = (Total Nilai x Bobot) / (Total Bobot).</p>
-                    <p class="mt-1 text-xs"><strong>Tips:</strong> Anda bisa menggunakan angka desimal. <br>Contoh penyederhanaan: Bobot 10% = 1, Bobot 25% = 2.5.</p>
-                </div>
-                <div id="weight-list-container" class="space-y-3">
-                    <!-- Daftar ujian dan input bobot akan muncul di sini -->
-                </div>
+                <div id="weight-list-container" class="space-y-3"></div>
             </div>
             <div class="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-surface flex justify-end gap-3">
                 <button onclick="closeWeightModal()" class="px-4 py-2 rounded-lg border hover:bg-gray-200 dark:hover:bg-gray-700 font-bold text-sm">Batal</button>
                 <button id="btn-save-weights" onclick="saveWeights()" class="px-6 py-2 rounded-lg bg-primary hover:bg-sky-600 text-white font-bold shadow-lg text-sm">Simpan Perubahan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL KELOLA KOLOM KUSTOM -->
+    <div id="custom-col-modal" class="fixed inset-0 z-[60] hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="card w-full max-w-3xl rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-surface flex justify-between items-center">
+                <h3 class="font-bold text-lg text-gray-800 dark:text-white flex items-center gap-2">
+                    <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                    Kelola Kolom Kustom (Tugas/Praktek)
+                </h3>
+                <button onclick="closeCustomColModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto bg-white dark:bg-deep space-y-4">
+                <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl text-sm text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 mb-4">
+                    <p class="font-bold">Info Fitur Kustom:</p>
+                    <p>Tambahkan kolom penilaian manual seperti Tugas, Praktek, atau Sikap. Kolom ini akan ikut dihitung ke dalam <b>Rata-rata Sistem</b> berdasarkan bobot yang Anda tentukan.</p>
+                </div>
+                
+                <!-- Input Baru -->
+                <div class="flex gap-2 items-end bg-gray-50 dark:bg-black/20 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <div class="flex-1">
+                        <label class="text-xs font-bold text-gray-500 block mb-1">Nama Kolom (Contoh: Tugas 1)</label>
+                        <input type="text" id="new-col-name" class="w-full p-2 rounded-lg border outline-none focus:ring-2 ring-indigo-500 bg-white dark:bg-surface dark:text-white dark:border-gray-600" placeholder="Ketik nama...">
+                    </div>
+                    <div class="w-24">
+                        <label class="text-xs font-bold text-gray-500 block mb-1">Bobot</label>
+                        <input type="number" id="new-col-weight" value="1" min="0.1" step="0.1" class="w-full p-2 rounded-lg border text-center outline-none focus:ring-2 ring-indigo-500 bg-white dark:bg-surface dark:text-white dark:border-gray-600">
+                    </div>
+                    <button onclick="addCustomCol()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg h-[42px] transition-colors shadow-md">
+                        Tambah
+                    </button>
+                </div>
+
+                <!-- Daftar Kolom -->
+                <div id="custom-col-list" class="space-y-2 mt-4">
+                    <!-- Injected by JS -->
+                </div>
+            </div>
+            <div class="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-surface flex justify-end gap-3">
+                <button onclick="closeCustomColModal()" class="px-4 py-2 rounded-lg border hover:bg-gray-200 dark:hover:bg-gray-700 font-bold text-sm">Tutup</button>
+                <button id="btn-save-custom-cols" onclick="saveCustomCols()" class="px-6 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg text-sm">Simpan Kolom</button>
             </div>
         </div>
     </div>
@@ -152,41 +191,48 @@
             <div class="flex justify-between h-16 items-center">
                 <div class="flex items-center gap-3">
                     <div class="p-2 bg-primary rounded-lg shadow-lg text-white">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                     </div>
                     <div>
                         <h1 class="text-xl font-bold tracking-tight text-gray-800 dark:text-white">Pengolahan <span class="text-primary">Nilai</span></h1>
                         <p class="text-[13px] text-gray-500 dark:text-gray-400 italic">User: <span id="header-user-id" class="font-bold">-</span></p>
                     </div>
                 </div>
-                <div class="flex gap-2">
+                <div class="flex gap-2 items-center flex-wrap justify-end">
                     <div id="user-badge" class="hidden md:flex items-center gap-2 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full border border-gray-200 dark:border-gray-700 mr-2">
                         <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
                         <span id="current-user-mapel" class="text-xs font-bold text-gray-600 dark:text-gray-300">Guest</span>
                     </div>
-                    <button onclick="openWeightModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm transition-all">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                        Atur Bobot
+                    
+                    <button id="btn-submit-rapor" onclick="submitFinalGrades()" class="hidden sm:flex bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-bold items-center gap-1 shadow-sm transition-all border border-blue-500">
+                        🚀 Setor Wali Kelas
                     </button>
-                    <button id="btn-export-excel" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm transition-all">
+
+                    <button onclick="openCustomColModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm transition-all">
+                        + Kolom Kustom
+                    </button>
+
+                    <button onclick="openWeightModal()" class="bg-slate-600 hover:bg-slate-700 text-white px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm transition-all">
+                        Atur Bobot Ujian
+                    </button>
+
+                    <button id="btn-export-excel" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm transition-all">
                         Export Excel
                     </button>
                     <button id="logout-btn" class="bg-red-100 text-red-600 px-3 py-2 rounded-lg text-sm font-bold hover:bg-red-200 transition-colors hidden">Tutup</button>
-                    <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                        🌙
-                    </button>
+                    <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">🌙</button>
                 </div>
             </div>
         </div>
     </nav>
 
     <!-- Main Content -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <main class="flex-1 max-w-[1400px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
         <!-- Filters -->
         <div class="card p-4 rounded-2xl shadow-sm flex flex-wrap gap-4 items-center justify-between bg-white dark:bg-surface">
             <div class="flex gap-3 flex-1 min-w-[300px]">
-                <div class="relative flex-1">
+                <div class="relative flex-1 max-w-sm">
                     <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none opacity-50"><svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg></div>
                     <input type="text" id="search-input" class="w-full pl-10 p-2.5 bg-transparent border dark:border-gray-600 rounded-xl text-sm outline-none focus:ring-2 ring-primary dark:text-white" placeholder="Cari Siswa...">
                 </div>
@@ -200,23 +246,26 @@
                     <option value="avg_asc">Nilai Terendah</option>
                 </select>
             </div>
-            <button id="btn-refresh" class="text-gray-500 hover:text-primary p-2 border dark:border-gray-600 rounded-lg flex items-center gap-2 transition-colors">
-                <span class="text-xs font-bold hidden sm:inline">Refresh Data</span>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-            </button>
+            
+            <div class="flex items-center gap-3">
+                <div class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg text-xs text-yellow-700 dark:text-yellow-400">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Pilih kotak input nilai lalu tekan <b class="mx-1">Ctrl + V</b> untuk Paste data dari Excel.
+                </div>
+                <button id="btn-refresh" class="text-gray-500 hover:text-primary p-2 border dark:border-gray-600 rounded-lg flex items-center gap-2 transition-colors">
+                    <span class="text-xs font-bold hidden sm:inline">Refresh Data</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                </button>
+            </div>
         </div>
 
         <!-- Main Table -->
-        <div class="card rounded-2xl shadow-sm overflow-hidden bg-white dark:bg-surface">
-            <div class="overflow-x-auto">
+        <div class="card rounded-2xl shadow-sm overflow-hidden bg-white dark:bg-surface relative">
+            <div class="overflow-x-auto custom-scrollbar">
                 <table class="w-full text-sm text-left" id="grades-table">
                     <thead class="bg-gray-100 dark:bg-gray-800 text-xs font-bold uppercase border-b dark:border-gray-700 text-gray-600 dark:text-gray-300">
-                        <tr>
-                            <th class="px-6 py-4 sticky left-0 bg-gray-100 dark:bg-gray-800 z-10 w-10 text-center">#</th>
-                            <th class="px-6 py-4 sticky left-10 bg-gray-100 dark:bg-gray-800 z-10">Nama Siswa</th>
-                            <th class="px-6 py-4 text-center">Kelas</th>
-                            <th class="px-6 py-4 text-center bg-primary/10 text-primary font-extrabold border-l dark:border-gray-700 w-24">Rata-rata</th>
-                            <th class="px-6 py-4 text-center w-24">Aksi</th>
+                        <tr id="table-header-row">
+                            <!-- Injected by JS -->
                         </tr>
                     </thead>
                     <tbody id="grades-body" class="divide-y divide-gray-200 dark:divide-gray-700 text-gray-700 dark:text-gray-300">
@@ -226,16 +275,20 @@
             </div>
             <div class="p-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700 text-xs opacity-70 flex justify-between text-gray-600 dark:text-gray-400">
                 <span>Total Siswa: <span id="total-students">0</span></span>
-                <span>Data Real-time</span>
+                <span>Nilai Akhir tersimpan otomatis. Tekan "Setor" untuk membagikan ke Wali Kelas.</span>
+            </div>
+            
+            <!-- Notifikasi Paste -->
+            <div id="toast-paste" class="absolute bottom-16 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-2 font-bold text-sm z-50">
+                <span class="text-success">✓</span> <span id="toast-msg">Paste Berhasil!</span>
             </div>
         </div>
 
     </main>
 
     <!-- MODAL: KOREKSI MANUAL -->
-    <div id="correction-modal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div id="correction-modal" class="fixed inset-0 z-[60] hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="card w-full max-w-4xl h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden bg-white dark:bg-surface">
-            
             <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-amber-50 dark:bg-amber-900/10">
                 <div>
                     <h3 class="font-bold text-lg flex items-center gap-2 text-gray-800 dark:text-white">
@@ -248,14 +301,12 @@
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
-
-            <div id="correction-content" class="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50 dark:bg-deep"></div>
-
+            <div id="correction-content" class="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50 dark:bg-deep custom-scrollbar"></div>
             <div class="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-surface flex justify-end gap-3">
                 <button onclick="closeCorrectionModal()" class="px-4 py-2 rounded-lg border hover:bg-gray-100 dark:hover:bg-gray-700 font-bold text-gray-600 dark:text-gray-300">Batal</button>
                 <button onclick="saveCorrection()" class="px-6 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-bold shadow-lg flex items-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    Simpan Nilai
+                    Simpan Koreksi
                 </button>
             </div>
         </div>
@@ -281,14 +332,19 @@
                     <th class="border border-black p-2 text-left">Mata Ujian / Kegiatan</th>
                     <th class="border border-black p-2 w-24 text-center">Bobot</th>
                     <th class="border border-black p-2 w-24 text-center">Nilai</th>
-                    <th class="border border-black p-2 w-32 text-center">Predikat</th>
+                    <th class="border border-black p-2 w-32 text-center">Keterangan</th>
                 </tr>
             </thead>
             <tbody id="print-body"></tbody>
             <tfoot>
                 <tr class="bg-gray-100 font-bold">
-                    <td colspan="3" class="border border-black p-2 text-right">Rata-rata Akhir (Terbobot)</td>
+                    <td colspan="3" class="border border-black p-2 text-right">Rata-rata Sistem</td>
                     <td class="border border-black p-2 text-center" id="print-avg">-</td>
+                    <td class="border border-black p-2"></td>
+                </tr>
+                <tr class="bg-blue-100 font-bold">
+                    <td colspan="3" class="border border-black p-2 text-right text-blue-900">NILAI AKHIR (MATANG)</td>
+                    <td class="border border-black p-2 text-center text-blue-900 text-lg" id="print-final">-</td>
                     <td class="border border-black p-2"></td>
                 </tr>
             </tfoot>
@@ -297,15 +353,15 @@
         <div class="mt-12 flex justify-end text-center">
             <div>
                 <p class="mb-16">Mengetahui,<br>Guru Pengampu</p>
-                <p class="font-bold border-b border-black inline-block min-w-[150px]"></p>
+                <p class="font-bold border-b border-black inline-block min-w-[150px]" id="print-teacher-name"></p>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, doc, getDoc, updateDoc, setDoc, deleteDoc, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAwIwimlyrE4qQqYa2gA8Pfygd59USsveQ",
@@ -317,22 +373,26 @@
         };
 
         let db, auth;
-        // GLOBAL VARS FOR IDENTITY
         let currentGuruId = null;
         let currentGuruMapel = null;
 
         let students = []; 
         let exams = []; 
         let scores = {}; 
+        
+        // --- NEW STATE UNTUK KOLOM KUSTOM & AUTO SAVE ---
+        let customColumns = []; // Format: [{ id: 'tugas1', name: 'Tugas 1', weight: 1 }]
+        let customScores = {};  // Format: { nis: { colId: score } }
+        let editedFinalGrades = {}; // Memori lokal untuk Nilai Akhir yang diketik/paste
+        let saveTimeout = null;
+
+        let existingRapor = {}; 
         let currentCorrectionData = null; 
 
-        // Zoom Variables
-        let currentScale = 1;
-        let isDragging = false;
+        // Zoom & Rotate Variables
+        let currentScale = 1; let currentRotation = 0; let isDragging = false;
         let startX, startY, translateX = 0, translateY = 0;
 
-        // --- GLOBAL FUNCTION EXPOSURE (FIXED) ---
-        // Ensure these functions are available globally for onclick attributes
         window.deleteExamPermanently = deleteExamPermanently;
         window.openCorrection = openCorrection;
         window.printReportCard = printReportCard;
@@ -344,24 +404,333 @@
         window.saveWeights = saveWeights;
         window.openImageViewer = openImageViewer;
         window.closeImageViewer = closeImageViewer;
-        window.zoomIn = zoomIn;
-        window.zoomOut = zoomOut;
-        window.resetZoom = resetZoom;
-        window.handleWheel = handleWheel;
-        window.startDrag = startDrag;
-        window.drag = drag;
-        window.endDrag = endDrag;
+        window.zoomIn = zoomIn; window.zoomOut = zoomOut; window.resetZoom = resetZoom;
+        window.rotateImage = rotateImage; window.handleWheel = handleWheel;
+        window.startDrag = startDrag; window.drag = drag; window.endDrag = endDrag;
+        window.submitFinalGrades = submitFinalGrades;
+        
+        // --- Custom Column Functions ---
+        window.openCustomColModal = openCustomColModal;
+        window.closeCustomColModal = closeCustomColModal;
+        window.addCustomCol = addCustomCol;
+        window.removeCustomCol = removeCustomCol;
+        window.saveCustomCols = saveCustomCols;
+        window.updateCustomColWeight = updateCustomColWeight;
+        window.deleteCustomColumn = deleteCustomColumn;
+        
+        // --- Paste Function ---
+        window.handleExcelPaste = handleExcelPaste;
 
-        // --- WEIGHT MANAGEMENT LOGIC ---
+        // --- DEBOUNCE AUTO SAVE (Kustom & Nilai Akhir) ---
+        function triggerAutoSave() {
+            if (saveTimeout) clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(async () => {
+                const promises = [];
+                // Kita simpan ke 'laporan_siswa'
+                for (const nis in editedFinalGrades) {
+                    const finalVal = editedFinalGrades[nis];
+                    const customVals = customScores[nis] || {};
+                    
+                    const docRef = doc(db, 'laporan_siswa', nis);
+                    promises.push(setDoc(docRef, {
+                        nilai_akhir: { [currentGuruMapel]: finalVal },
+                        nilai_kustom: { [currentGuruMapel]: customVals },
+                        last_updated: serverTimestamp()
+                    }, { merge: true }));
+                }
+                
+                if (promises.length > 0) {
+                    try {
+                        await Promise.all(promises);
+                        console.log("Auto-save berhasil.");
+                    } catch(e) { console.error("Auto-save gagal:", e); }
+                }
+            }, 1500); // Tunggu 1.5 detik setelah guru selesai mengetik/paste
+        }
+
+        // --- FUNGSI PASTE DARI EXCEL (CORE FEATURE) ---
+        function handleExcelPaste(e, inputElem, colId) {
+            e.preventDefault();
+            const pasteData = (e.clipboardData || window.clipboardData).getData('text');
+            // Pecah berdasarkan enter, abaikan baris yang kosong murni
+            const values = pasteData.split(/\r?\n/).filter(val => val.trim() !== '');
+
+            // Cari semua input di layar saat ini yang berada pada kolom yang sama
+            const allInputs = Array.from(document.querySelectorAll(`.paste-${colId}`));
+            const startIndex = allInputs.indexOf(inputElem);
+
+            if (startIndex === -1) return;
+
+            let valsPasted = 0;
+            for (let i = 0; i < values.length; i++) {
+                if (startIndex + i < allInputs.length) {
+                    const targetInput = allInputs[startIndex + i];
+                    // Ganti koma jadi titik (Format Indonesia ke Global)
+                    let num = parseFloat(values[i].replace(',', '.')); 
+                    
+                    if (!isNaN(num)) {
+                        targetInput.value = num;
+                        const nis = targetInput.dataset.nis;
+                        
+                        // Flash animation
+                        targetInput.classList.remove('paste-highlight');
+                        void targetInput.offsetWidth; // trigger reflow
+                        targetInput.classList.add('paste-highlight');
+
+                        // Simpan ke memori lokal berdasarkan jenis kolom
+                        if (colId === 'nilai_akhir') {
+                            editedFinalGrades[nis] = num;
+                        } else {
+                            if (!customScores[nis]) customScores[nis] = {};
+                            customScores[nis][colId] = num;
+                        }
+                        valsPasted++;
+                    }
+                }
+            }
+            
+            // Trigger auto save & recalculate
+            triggerAutoSave();
+            renderTable(); // Refresh untuk update rata-rata dsb
+            
+            // Tampilkan notifikasi
+            const toast = document.getElementById('toast-paste');
+            document.getElementById('toast-msg').innerText = `Berhasil menyalin ${valsPasted} baris nilai!`;
+            toast.style.opacity = '1';
+            toast.style.transform = 'translate(-50%, -20px)';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translate(-50%, 0)';
+            }, 3000);
+        }
+
+        window.handleManualInput = (e, nis, colId) => {
+            let val = parseFloat(e.target.value);
+            if (isNaN(val)) val = 0;
+            
+            if (colId === 'nilai_akhir') {
+                editedFinalGrades[nis] = val;
+            } else {
+                if (!customScores[nis]) customScores[nis] = {};
+                customScores[nis][colId] = val;
+            }
+            triggerAutoSave();
+            // Optional: re-render to update average instantly if custom col changes
+            if (colId !== 'nilai_akhir') renderTable();
+        };
+
+        // --- FUNGSI SETOR NILAI AKHIR (DIPERBARUI DENGAN MEMORI BARU) ---
+        async function submitFinalGrades() {
+            if(!currentGuruMapel || currentGuruMapel === 'ADMIN PUSAT') {
+                return alert("Fitur Setor Nilai hanya berlaku untuk Guru Mata Pelajaran.");
+            }
+            
+            const filterK = document.getElementById('filter-kelas').value;
+            const targetMsg = filterK === 'all' ? "SEMUA KELAS" : `Hanya Kelas ${filterK}`;
+            
+            if(!confirm(`Yakin ingin menyetor nilai ke Kotak Masuk Wali Kelas?\n\nTarget Setor: ${targetMsg}\n\nCatatan: Data asli Anda tetap aman, dan Wali Kelas dapat melihat salinan yang Anda kirimkan.`)) return;
+
+            const btn = document.getElementById('btn-submit-rapor');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Mengirim...'; 
+            btn.disabled = true;
+
+            try {
+                // Pastikan auto-save selesai dulu
+                if (saveTimeout) { clearTimeout(saveTimeout); triggerAutoSave(); }
+
+                const dataPerKelas = {};
+                
+                students.forEach(s => {
+                    if (filterK !== 'all' && s.kelas !== filterK) return;
+                    if(!dataPerKelas[s.kelas]) dataPerKelas[s.kelas] = {};
+                    
+                    // Prioritas: 1. Input yang sedang diedit (editedFinalGrades), 2. Default Rata-rata (s.avg)
+                    let baseVal = editedFinalGrades[s.id];
+                    if (baseVal === undefined) baseVal = Math.round(s.avg || 0);
+                    
+                    dataPerKelas[s.kelas][s.id] = baseVal;
+                });
+
+                // KIRIM KE KOTAK MASUK WALI KELAS (leger_terkirim)
+                const timestamp = new Date().toISOString();
+                const promises = [];
+                for (const [kelasName, nilaiObj] of Object.entries(dataPerKelas)) {
+                    const docId = `${currentGuruMapel}_${kelasName}`.replace(/\s+/g, '_');
+                    const docRef = doc(db, 'leger_terkirim', docId);
+                    
+                    promises.push(setDoc(docRef, {
+                        kelas: kelasName,
+                        mapel: currentGuruMapel,
+                        guru: currentGuruId || "Guru",
+                        nilai: nilaiObj,
+                        last_updated: timestamp
+                    }));
+                }
+
+                await Promise.all(promises);
+                alert(`Luar Biasa! Salinan nilai ${currentGuruMapel} untuk ${targetMsg} berhasil mendarat di meja Wali Kelas.`);
+                
+            } catch (e) {
+                alert("Gagal menyetor nilai: " + e.message);
+                console.error(e);
+            } finally {
+                btn.innerHTML = originalText; 
+                btn.disabled = false;
+            }
+        }
+
+        // --- MANAJEMEN KOLOM KUSTOM ---
+        function openCustomColModal() {
+            renderCustomColList();
+            document.getElementById('custom-col-modal').classList.remove('hidden');
+            document.getElementById('custom-col-modal').classList.add('flex');
+        }
+
+        function closeCustomColModal() {
+            document.getElementById('custom-col-modal').classList.add('hidden');
+            document.getElementById('custom-col-modal').classList.remove('flex');
+        }
+
+        function renderCustomColList() {
+            const list = document.getElementById('custom-col-list');
+            list.innerHTML = '';
+            
+            if(customColumns.length === 0) {
+                list.innerHTML = '<p class="text-center text-sm text-gray-400 py-4 italic">Belum ada kolom kustom.</p>';
+                return;
+            }
+
+            customColumns.forEach((col, idx) => {
+                list.innerHTML += `
+                <div class="flex items-center justify-between p-3 bg-white dark:bg-surface border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <div class="flex-1">
+                        <p class="font-bold text-sm text-gray-800 dark:text-white">${col.name}</p>
+                        <div class="flex items-center gap-2 mt-1">
+                            <label class="text-xs text-gray-500">Bobot:</label>
+                            <input type="number" onchange="updateCustomColWeight(${idx}, this.value)" value="${col.weight}" min="0.1" step="0.1" class="w-16 p-1 rounded border text-center outline-none focus:ring-2 ring-indigo-500 bg-gray-50 dark:bg-black dark:text-white dark:border-gray-600 text-xs">
+                        </div>
+                    </div>
+                    <button onclick="removeCustomCol(${idx})" class="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                </div>`;
+            });
+        }
+
+        function addCustomCol() {
+            const nameInput = document.getElementById('new-col-name');
+            const weightInput = document.getElementById('new-col-weight');
+            const name = nameInput.value.trim();
+            const weight = parseFloat(weightInput.value) || 1;
+
+            if(!name) return alert("Nama kolom harus diisi!");
+            
+            // Generate simple ID
+            const id = 'col_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+            
+            customColumns.push({ id, name, weight });
+            nameInput.value = '';
+            weightInput.value = '1';
+            
+            renderCustomColList();
+        }
+
+        function removeCustomCol(idx) {
+            if(confirm(`Hapus kolom "${customColumns[idx].name}"?\nData nilai siswa di kolom ini tidak akan ikut terhitung lagi.`)) {
+                customColumns.splice(idx, 1);
+                renderCustomColList();
+            }
+        }
+
+        function updateCustomColWeight(idx, val) {
+            let weight = parseFloat(val);
+            if (isNaN(weight) || weight <= 0) weight = 1;
+            customColumns[idx].weight = weight;
+        }
+
+        async function deleteCustomColumn(colId, colName) {
+            if(!confirm(`HAPUS PERMANEN Kolom "${colName}"?\nSemua nilai siswa di kolom ini akan dihapus dari database secara permanen.`)) return;
+
+            // 1. Hapus dari array lokal
+            const idx = customColumns.findIndex(c => c.id === colId);
+            if(idx > -1) customColumns.splice(idx, 1);
+
+            // 2. Hapus nilai dari memori lokal
+            for (const nis in customScores) {
+                if (customScores[nis][colId] !== undefined) {
+                    delete customScores[nis][colId];
+                }
+            }
+
+            try {
+                // 3. Update Profil Guru (Hapus Definisi Kolom)
+                const guruRef = doc(db, 'users_guru', currentGuruId);
+                const gSnap = await getDoc(guruRef);
+                if(gSnap.exists() && gSnap.data().customCols) {
+                    let currentCustomCols = gSnap.data().customCols;
+                    currentCustomCols[currentGuruMapel] = customColumns;
+                    await updateDoc(guruRef, { customCols: currentCustomCols });
+                }
+
+                // 4. Update data nilai siswa di database
+                const promises = [];
+                for (const nis in customScores) {
+                    const docRef = doc(db, 'laporan_siswa', nis);
+                    promises.push(setDoc(docRef, {
+                        nilai_kustom: { [currentGuruMapel]: customScores[nis] },
+                        last_updated: serverTimestamp()
+                    }, { merge: true }));
+                }
+                if (promises.length > 0) await Promise.all(promises);
+
+                alert(`Kolom ${colName} berhasil dihapus.`);
+                renderTable(); // Segarkan tampilan tabel
+            } catch (e) {
+                alert("Gagal menghapus kolom: " + e.message);
+            }
+        }
+
+        async function saveCustomCols() {
+            if(!currentGuruId || !currentGuruMapel) return;
+            
+            const btn = document.getElementById('btn-save-custom-cols');
+            const originalText = btn.innerText;
+            btn.innerText = 'Menyimpan...'; btn.disabled = true;
+
+            try {
+                // Simpan pengaturan kolom ke profile guru
+                const guruRef = doc(db, 'users_guru', currentGuruId);
+                const gSnap = await getDoc(guruRef);
+                
+                let currentCustomCols = {};
+                if(gSnap.exists() && gSnap.data().customCols) {
+                    currentCustomCols = gSnap.data().customCols;
+                }
+                
+                currentCustomCols[currentGuruMapel] = customColumns;
+                
+                await updateDoc(guruRef, { customCols: currentCustomCols });
+                
+                closeCustomColModal();
+                renderTable(); // Update tabel dengan kolom baru
+            } catch(e) {
+                alert("Gagal menyimpan kolom: " + e.message);
+            } finally {
+                btn.innerText = originalText; btn.disabled = false;
+            }
+        }
+
+        // --- WEIGHT LOGIC (CBT) ---
         function openWeightModal() {
             const listContainer = document.getElementById('weight-list-container');
             listContainer.innerHTML = '';
             
             if(exams.length === 0) {
-                listContainer.innerHTML = '<div class="text-center text-gray-500 py-4">Belum ada ujian.</div>';
+                listContainer.innerHTML = '<div class="text-center text-gray-500 py-4">Belum ada ujian CBT.</div>';
             } else {
                 exams.forEach(e => {
-                    const bobot = e.bobotNilai || 1; // Default 1
+                    const bobot = e.bobotNilai || 1; 
                     const div = document.createElement('div');
                     div.className = "flex items-center justify-between p-3 border rounded-lg bg-gray-50 dark:bg-black/20 border-gray-200 dark:border-gray-700";
                     div.innerHTML = `
@@ -371,7 +740,6 @@
                         </div>
                         <div class="flex items-center gap-2">
                             <label class="text-xs text-gray-500">Bobot:</label>
-                            <!-- UPDATED: Support Step 0.1 for Decimal -->
                             <input type="number" class="exam-weight-input w-20 p-2 rounded border text-center font-bold outline-none focus:ring-2 ring-primary bg-white dark:bg-surface dark:text-white dark:border-gray-600" 
                                 data-id="${e.id}" value="${bobot}" min="0.1" step="0.1">
                         </div>
@@ -379,7 +747,6 @@
                     listContainer.appendChild(div);
                 });
             }
-
             document.getElementById('weight-modal').classList.remove('hidden');
             document.getElementById('weight-modal').classList.add('flex');
         };
@@ -399,7 +766,6 @@
                 const promises = [];
                 inputs.forEach(inp => {
                     const docId = inp.dataset.id;
-                    // UPDATED: Convert comma to dot before parsing float to support ID locale
                     const rawVal = inp.value.replace(',', '.');
                     const val = parseFloat(rawVal) || 1;
                     promises.push(updateDoc(doc(db, 'ujian_terjadwal', docId), { bobotNilai: val }));
@@ -408,7 +774,7 @@
                 await Promise.all(promises);
                 alert("Bobot berhasil disimpan!");
                 closeWeightModal();
-                loadAllData(); // Reload to reflect changes
+                loadAllData();
             } catch(e) {
                 alert("Gagal: " + e.message);
             } finally {
@@ -416,7 +782,7 @@
             }
         };
 
-        // --- ZOOM VIEWER LOGIC ---
+        // --- ZOOM & ROTATE VIEWER LOGIC ---
         function openImageViewer(src) {
             const img = document.getElementById('image-viewer-content');
             img.src = src;
@@ -428,58 +794,36 @@
             document.getElementById('image-viewer-modal').classList.add('hidden');
             document.getElementById('image-viewer-modal').classList.remove('flex');
         };
-        
         function zoomIn() { updateZoom(0.2); }
         function zoomOut() { updateZoom(-0.2); }
-        function resetZoom() {
-            currentScale = 1; translateX = 0; translateY = 0;
-            applyTransform();
-        };
-
-        function handleWheel(e) {
-            e.preventDefault();
-            const delta = e.deltaY > 0 ? -0.1 : 0.1;
-            updateZoom(delta);
-        };
-
+        function rotateImage() { currentRotation = (currentRotation + 90) % 360; applyTransform(); }
+        function resetZoom() { currentScale = 1; translateX = 0; translateY = 0; currentRotation = 0; applyTransform(); };
+        function handleWheel(e) { e.preventDefault(); updateZoom(e.deltaY > 0 ? -0.1 : 0.1); };
         function updateZoom(delta) {
             currentScale = Math.min(Math.max(0.5, currentScale + delta), 5);
             document.getElementById('zoom-level').innerText = Math.round(currentScale * 100) + '%';
             applyTransform();
         }
-
         function applyTransform() {
             const img = document.getElementById('image-viewer-content');
-            img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentScale})`;
+            img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentScale}) rotate(${currentRotation}deg)`;
         }
-
         function startDrag(e) {
-            if (currentScale <= 1) return;
-            isDragging = true;
-            startX = e.clientX - translateX;
-            startY = e.clientY - translateY;
+            if (currentScale <= 1 && currentRotation === 0) return;
+            isDragging = true; startX = e.clientX - translateX; startY = e.clientY - translateY;
             document.getElementById('image-container').style.cursor = 'grabbing';
         };
-
         function drag(e) {
-            if (!isDragging) return;
-            e.preventDefault();
-            translateX = e.clientX - startX;
-            translateY = e.clientY - startY;
-            applyTransform();
+            if (!isDragging) return; e.preventDefault();
+            translateX = e.clientX - startX; translateY = e.clientY - startY; applyTransform();
         };
-
-        function endDrag() {
-            isDragging = false;
-            document.getElementById('image-container').style.cursor = 'grab';
-        };
+        function endDrag() { isDragging = false; document.getElementById('image-container').style.cursor = 'grab'; };
 
         document.addEventListener('DOMContentLoaded', async () => {
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
 
-            // --- INJEKSI START: LOGIKA AUTO LOGIN (LocalStorage dari Dashboard) ---
             onAuthStateChanged(auth, (user) => {
                 const overlay = document.getElementById('login-overlay');
                 const logoutBtn = document.getElementById('logout-btn');
@@ -487,55 +831,46 @@
                 const formDiv = document.getElementById('admin-login-form');
                 const userBadge = document.getElementById('user-badge');
                 
-                // 1. Cek Token Mapel dari LocalStorage (diset oleh Dashboard)
                 const tokenMapel = localStorage.getItem('cbt_user_mapel');
                 currentGuruId = localStorage.getItem('cbt_user_id');
                 currentGuruMapel = tokenMapel;
 
-                // 2. Cek apakah user sudah login di Firebase (Email/Pass atau Anonymous)
                 const isLoggedIn = user !== null;
                 
-                // 3. LOGIKA UTAMA
                 if (isLoggedIn) {
-                    // === USER SUDAH AUTH ===
-                    
-                    // Buka Akses
                     overlay.classList.add('hidden');
                     logoutBtn.classList.remove('hidden');
                     
-                    // Tampilkan Badge User
                     if(tokenMapel) {
                         document.getElementById('current-user-mapel').textContent = tokenMapel;
                         document.getElementById('header-user-id').textContent = currentGuruId || 'Unknown';
                         userBadge.classList.remove('hidden');
+                        
+                        if (currentGuruMapel !== 'ADMIN PUSAT') {
+                            document.getElementById('btn-submit-rapor').classList.remove('hidden');
+                        }
                     }
 
-                    // LOAD DATA SETELAH AUTH
                     loadAllData();
 
                 } else if (tokenMapel) {
-                    // === USER BELUM AUTH, TAPI ADA TOKEN DARI DASHBOARD ===
                     overlay.classList.remove('hidden');
-                    formDiv.classList.add('hidden'); // Sembunyikan form
-                    loadingDiv.classList.remove('hidden'); // Tampilkan loading
+                    formDiv.classList.add('hidden'); 
+                    loadingDiv.classList.remove('hidden'); 
 
-                    // Login Anonymous agar bisa akses Firestore
                     signInAnonymously(auth).catch(e => {
                         console.error("Auto-login gagal:", e);
                         loadingDiv.classList.add('hidden');
                         formDiv.classList.remove('hidden');
-                        alert("Gagal login otomatis. Silakan gunakan email manual.");
+                        alert("Gagal login otomatis.");
                     });
                 } else {
-                    // === TIDAK ADA TOKEN & TIDAK LOGIN ===
-                    // Tampilkan Form Login Manual
                     overlay.classList.remove('hidden');
                     formDiv.classList.remove('hidden');
                     loadingDiv.classList.add('hidden');
                     logoutBtn.classList.add('hidden');
                 }
             });
-            // --- INJEKSI END ---
 
             document.getElementById('logout-btn').addEventListener('click', () => {
                 if(confirm("Tutup aplikasi Pengolahan Nilai?")) {
@@ -562,21 +897,41 @@
             tbody.innerHTML = '<tr><td colspan="100%" class="text-center py-10 opacity-50 italic">Memuat data nilai...</td></tr>';
 
             try {
-                // 1. Fetch Exams (UJIAN) Terlebih Dahulu untuk Header Tabel
-                let qExams = collection(db, 'ujian_terjadwal');
-                
-                // FILTER LOGIC: Tampilkan ujian berdasarkan ID Pembuat (jika bukan Admin Pusat)
-                if (currentGuruMapel !== 'ADMIN PUSAT' && currentGuruId) {
-                     qExams = query(qExams, where('dibuatOleh', '==', currentGuruId));
-                }
-                // Jika data lama tidak punya field dibuatOleh, data tersebut hanya akan terlihat oleh Admin Pusat.
-                // Ini perilaku yang diharapkan untuk menjaga privasi antar guru.
+                // 1. CARI TAHU KELAS DAN KOLOM KUSTOM DARI PROFIL GURU
+                let allowedClassesForMapel = new Set();
+                customColumns = []; // Reset
 
+                if (currentGuruMapel !== 'ADMIN PUSAT' && currentGuruId) {
+                    try {
+                        const gSnap = await getDoc(doc(db, 'users_guru', currentGuruId));
+                        if (gSnap.exists()) {
+                            const gData = gSnap.data();
+                            // Ambil Data Kelas Mengajar
+                            if (gData.mengajar && Array.isArray(gData.mengajar)) {
+                                gData.mengajar.forEach(item => {
+                                    if (item.mapel === currentGuruMapel && item.kelas) {
+                                        if (Array.isArray(item.kelas)) {
+                                            item.kelas.forEach(k => allowedClassesForMapel.add(k));
+                                        } else {
+                                            allowedClassesForMapel.add(item.kelas);
+                                        }
+                                    }
+                                });
+                            }
+                            // Ambil Pengaturan Kolom Kustom
+                            if (gData.customCols && gData.customCols[currentGuruMapel]) {
+                                customColumns = gData.customCols[currentGuruMapel];
+                            }
+                        }
+                    } catch(e) { console.warn("Gagal cek profil guru", e); }
+                }
+
+                // 2. AMBIL DATA UJIAN (CBT)
+                let qExams = collection(db, 'ujian_terjadwal');
                 const eSnap = await getDocs(qExams);
                 exams = [];
-                const examIds = new Set(); // Untuk filter hasil ujian nanti
+                const examIds = new Set(); 
 
-                // 2. Manual Correction Detection (Optimized with visible exams)
                 const q1 = query(collection(db, 'bank_soal'), where('type', '==', 'esai-kompleks'));
                 const q2 = query(collection(db, 'bank_soal'), where('type', '==', 'esai-singkat'));
                 const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
@@ -586,13 +941,11 @@
 
                 eSnap.forEach(d => {
                     const data = d.data();
-                    if(data.status !== 'dihapus') {
-                        // --- LOGIKA FILTER MAPEL (BARU) ---
-                        // Sama seperti Admin Ujian: filter mapel jika bukan admin pusat
-                        if (currentGuruMapel !== 'ADMIN PUSAT' && data.mapel && data.mapel !== currentGuruMapel) {
-                            return; // Skip ujian ini karena beda mapel
+                    if(data.status !== 'dihapus' && data.status !== 'draft') {
+                        if (currentGuruMapel !== 'ADMIN PUSAT') {
+                            if (data.mapel !== currentGuruMapel) return;
+                            if (data.jenis_ujian !== 'TERPUSAT' && data.dibuatOleh !== currentGuruId) return; 
                         }
-
                         const hasManualCorrection = (data.daftarIdSoal || []).some(id => manualCorrectionIds.has(id));
                         const bobot = data.bobotNilai || 1;
                         exams.push({ id: d.id, hasManualCorrection: hasManualCorrection, bobotNilai: bobot, ...data });
@@ -601,62 +954,72 @@
                 });
                 exams.sort((a,b) => new Date(b.tanggal || 0) - new Date(a.tanggal || 0));
 
-                // 3. Fetch Students
-                // --- OPTIMASI: Hanya ambil siswa yang ada di kelas yang punya ujian?
-                // Untuk sementara, kita ambil semua siswa dulu, nanti difilter di UI
-                const sSnap = await getDocs(query(collection(db, 'siswa')));
-                students = [];
-                
-                // Set kelas yang valid hanya dari ujian yang sudah difilter
                 const validClassesFromExams = new Set();
                 exams.forEach(ex => {
-                    if (ex.targetSemuaKelas) {
-                        // Jika ada ujian untuk semua kelas, maka semua kelas dianggap valid
-                        validClassesFromExams.add('ALL'); 
-                    } else if (ex.targetKelas && Array.isArray(ex.targetKelas)) {
+                    if (ex.targetSemuaKelas) validClassesFromExams.add('ALL'); 
+                    else if (ex.targetKelas && Array.isArray(ex.targetKelas)) {
                         ex.targetKelas.forEach(cls => validClassesFromExams.add(cls));
                     }
                 });
 
+                // 3. AMBIL DATA SISWA DAN ISI FILTER KELAS
+                const sSnap = await getDocs(query(collection(db, 'siswa')));
+                students = [];
                 const classSet = new Set();
+                
                 sSnap.forEach(d => {
                     const data = d.data();
                     students.push({ id: d.id, ...data });
                     
-                    // Populate filter kelas hanya jika kelas tersebut relevan dengan ujian yang ada
-                    // ATAU jika ujiannya "Semua Kelas"
                     if(data.kelas) {
-                        if (validClassesFromExams.has('ALL') || validClassesFromExams.has(data.kelas)) {
+                        if (currentGuruMapel === 'ADMIN PUSAT') {
                             classSet.add(data.kelas);
+                        } else if (allowedClassesForMapel.size > 0) {
+                            if (allowedClassesForMapel.has(data.kelas)) classSet.add(data.kelas);
+                        } else {
+                            if (validClassesFromExams.has('ALL') || validClassesFromExams.has(data.kelas)) classSet.add(data.kelas);
                         }
                     }
                 });
 
                 const filterKelas = document.getElementById('filter-kelas');
-                // Simpan seleksi saat ini agar tidak reset saat refresh
                 const currentSelection = filterKelas.value;
                 filterKelas.innerHTML = '<option value="all">Semua Kelas</option>';
                 Array.from(classSet).sort().forEach(c => filterKelas.add(new Option(c, c)));
-                if(currentSelection && Array.from(classSet).includes(currentSelection)) {
-                    filterKelas.value = currentSelection;
-                }
+                if(currentSelection && Array.from(classSet).includes(currentSelection)) filterKelas.value = currentSelection;
 
-                // 4. Fetch Results (Fetch all, filter in memory)
-                // Firestore limitasi 'in' query max 10, jadi lebih aman fetch semua lalu filter JS untuk aplikasi skala kecil/menengah
+                // 4. AMBIL DATA HASIL UJIAN (CBT)
                 const rSnap = await getDocs(query(collection(db, 'hasil_ujian')));
                 scores = {};
                 rSnap.forEach(d => {
                     const data = d.data();
-                    // Hanya masukkan skor jika ujiannya ada di daftar ujian guru ini (examIds)
                     if(examIds.has(data.ujianId)) {
                         if(!scores[data.nis]) scores[data.nis] = {};
                         scores[data.nis][data.ujianId] = { docId: d.id, ...data };
                     }
                 });
 
-                // RENDER HEADER TABEL
-                renderTableHeader();
+                // 5. AMBIL DATA RAPOR (UNTUK NILAI AKHIR & NILAI KUSTOM)
+                const raporSnap = await getDocs(collection(db, 'laporan_siswa'));
+                existingRapor = {};
+                customScores = {}; // Reset local custom scores memori
+                
+                raporSnap.forEach(d => {
+                    const rData = d.data();
+                    existingRapor[d.id] = rData;
+                    
+                    // Ekstrak Nilai Kustom Jika ada
+                    if(rData.nilai_kustom && rData.nilai_kustom[currentGuruMapel]) {
+                        customScores[d.id] = rData.nilai_kustom[currentGuruMapel];
+                    }
+                    
+                    // Inisiasi editedFinalGrades dari database (agar tidak hilang saat refresh)
+                    if(rData.nilai_akhir && rData.nilai_akhir[currentGuruMapel] !== undefined) {
+                        editedFinalGrades[d.id] = rData.nilai_akhir[currentGuruMapel];
+                    }
+                });
 
+                renderTableHeader();
                 renderTable();
 
             } catch(e) {
@@ -667,66 +1030,71 @@
 
         function renderTableHeader() {
             const filterK = document.getElementById('filter-kelas').value;
-            const headerRow = document.querySelector('#grades-table thead tr');
-            
-            // Simpan header statis (No, Nama, Kelas, Rata-rata, Aksi)
-            // Indeks: 0,1,2 (Kiri) dan length-2, length-1 (Kanan)
-            // Kita rebuild dari awal untuk keamanan
+            const headerRow = document.getElementById('table-header-row');
             
             headerRow.innerHTML = `
-                <th class="px-6 py-4 sticky left-0 bg-gray-100 dark:bg-gray-800 z-10 w-10 text-center">#</th>
-                <th class="px-6 py-4 sticky left-10 bg-gray-100 dark:bg-gray-800 z-10">Nama Siswa</th>
+                <th class="px-6 py-4 sticky left-0 bg-gray-100 dark:bg-gray-800 z-20 w-10 text-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">#</th>
+                <th class="px-6 py-4 sticky left-10 bg-gray-100 dark:bg-gray-800 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Nama Siswa</th>
                 <th class="px-6 py-4 text-center whitespace-nowrap">Kelas</th>
             `;
 
-            // Filter Exams based on Class Filter
-            // Logic: 
-            // 1. Jika filterK == 'all', tampilkan semua ujian
-            // 2. Jika filterK != 'all', tampilkan ujian yg (targetSemuaKelas == true OR targetKelas contains filterK)
+            // RENDER EXAMS (CBT)
             const visibleExams = exams.filter(e => {
                 if (filterK === 'all') return true;
                 if (e.targetSemuaKelas) return true;
                 return e.targetKelas && e.targetKelas.includes(filterK);
             });
 
-            if (visibleExams.length === 0) {
-                const th = document.createElement('th');
-                th.className = "px-6 py-4 text-center text-gray-400 italic font-normal";
-                th.innerText = "Tidak ada ujian untuk kelas ini";
-                headerRow.appendChild(th);
+            if (visibleExams.length === 0 && customColumns.length === 0) {
+                headerRow.innerHTML += `<th class="px-6 py-4 text-center text-gray-400 italic font-normal">Belum ada data nilai</th>`;
             } else {
                 visibleExams.forEach(e => {
-                    const th = document.createElement('th');
-                    // Style updated for slimmer column and wrapped text
-                    th.className = "px-2 py-4 text-center relative group hover:bg-black/5 dark:hover:bg-white/5 transition-colors align-bottom min-w-[80px] max-w-[100px]";
-                    
                     const eyeIcon = e.settingTampilNilai ? '👁️' : '🙈'; 
                     const eyeTitle = e.settingTampilNilai ? 'Nilai Tampil ke Siswa' : 'Nilai Disembunyikan';
                     const weightBadge = e.bobotNilai > 1 ? `<div class="bg-primary/20 text-primary px-1 rounded text-[9px] inline-block mt-1">x${e.bobotNilai}</div>` : '';
                     
-                    // Force word wrap for exam name
-                    th.innerHTML = `
-                        <div class="flex flex-col items-center justify-end h-full">
-                            <span class="text-[9px] opacity-50 font-normal mb-1 block w-full truncate" title="${e.kodeUjian}">${e.kodeUjian} <span title="${eyeTitle}" class="cursor-help">${eyeIcon}</span></span>
-                            <span class="text-xs font-bold leading-tight break-words w-full">${e.namaUjian}</span>
-                            ${weightBadge}
-                            <button onclick="window.deleteExamPermanently('${e.id}', '${e.namaUjian}', '${e.kodeUjian}')" class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all shadow-md z-20 cursor-pointer" title="Hapus Permanen">
-                                <svg class="w-3 h-3 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                            </button>
-                        </div>`;
-                    headerRow.appendChild(th);
+                    headerRow.innerHTML += `
+                        <th class="px-2 py-4 text-center relative group hover:bg-black/5 dark:hover:bg-white/5 transition-colors align-bottom min-w-[80px] max-w-[100px]">
+                            <div class="flex flex-col items-center justify-end h-full">
+                                <span class="text-[9px] opacity-50 font-normal mb-1 block w-full truncate" title="${e.kodeUjian}">${e.kodeUjian} <span title="${eyeTitle}" class="cursor-help">${eyeIcon}</span></span>
+                                <span class="text-xs font-bold leading-tight break-words w-full text-primary">${e.namaUjian}</span>
+                                ${weightBadge}
+                                <button onclick="window.deleteExamPermanently('${e.id}', '${e.namaUjian}', '${e.kodeUjian}')" class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all shadow-md z-20 cursor-pointer" title="Hapus Permanen">
+                                    <svg class="w-3 h-3 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </div>
+                        </th>`;
                 });
             }
 
-            // Append Rata-rata & Aksi
+            // RENDER CUSTOM COLUMNS
+            customColumns.forEach(col => {
+                headerRow.innerHTML += `
+                <th class="px-2 py-4 text-center relative group align-bottom min-w-[80px] bg-indigo-50/50 dark:bg-indigo-900/10 border-l border-indigo-100 dark:border-indigo-800">
+                    <div class="flex flex-col items-center justify-end h-full">
+                        <span class="text-[9px] text-indigo-500 font-bold mb-1"><i class="fa-solid fa-clipboard-list"></i> Kustom</span>
+                        <span class="text-xs font-bold leading-tight break-words w-full text-indigo-700 dark:text-indigo-300" title="Bisa Paste (Ctrl+V) menurun ke bawah">${col.name}</span>
+                        ${col.weight !== 1 ? `<div class="bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 px-1 rounded text-[9px] inline-block mt-1">x${col.weight}</div>` : ''}
+                        
+                        <button onclick="window.deleteCustomColumn('${col.id}', '${col.name}')" class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all shadow-md z-20 cursor-pointer" title="Hapus Kolom Permanen">
+                            <svg class="w-3 h-3 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                </th>`;
+            });
+
             headerRow.innerHTML += `
-                <th class="px-6 py-4 text-center bg-primary/10 text-primary font-extrabold border-l dark:border-gray-700 w-24">Rata-rata</th>
-                <th class="px-6 py-4 text-center w-24">Aksi</th>
+                <th class="px-4 py-4 text-center bg-gray-200 dark:bg-gray-700 font-extrabold border-l dark:border-gray-600 w-24 leading-tight shadow-inner">
+                    Rata-rata<br><span class="text-[9px] font-normal italic">(Sistem)</span>
+                </th>
+                <th class="px-4 py-4 text-center bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 font-extrabold border-l border-blue-200 dark:border-blue-800 w-32 leading-tight shadow-inner" title="Bisa Paste (Ctrl+V) menurun ke bawah">
+                    Nilai Akhir<br><span class="text-[9px] font-normal italic text-blue-600 dark:text-blue-400">✏️ Paste/Manual</span>
+                </th>
+                <th class="px-6 py-4 text-center w-24">Rapor</th>
             `;
         }
 
         function renderTable() {
-            // Re-render header first whenever filter changes to update visible exams columns
             renderTableHeader();
 
             const tbody = document.getElementById('grades-body');
@@ -734,25 +1102,30 @@
             const filterK = document.getElementById('filter-kelas').value;
             const sortMode = document.getElementById('sort-by').value;
 
-            // 1. Filter Students
             let filteredStudents = students.filter(s => {
                 const matchName = s.nama.toLowerCase().includes(search) || s.id.toLowerCase().includes(search);
                 const matchClass = filterK === 'all' || s.kelas === filterK;
-                return matchName && matchClass;
+                const isInAllowedDropdown = Array.from(document.getElementById('filter-kelas').options).some(opt => opt.value === s.kelas);
+                return matchName && matchClass && (isInAllowedDropdown || filterK === 'all' && document.getElementById('filter-kelas').options.length <= 1);
             });
+            
+            if (filterK === 'all') {
+                const availableOpts = Array.from(document.getElementById('filter-kelas').options).map(o => o.value);
+                filteredStudents = filteredStudents.filter(s => availableOpts.includes(s.kelas) || availableOpts.length === 1);
+            }
 
-            // 2. Identify Visible Exams based on Class Filter
             const visibleExams = exams.filter(e => {
                 if (filterK === 'all') return true;
                 if (e.targetSemuaKelas) return true;
                 return e.targetKelas && e.targetKelas.includes(filterK);
             });
 
-            // 3. Calculate Weighted Average based on VISIBLE EXAMS ONLY
+            // HITUNG RATA-RATA SISTEM (CBT + CUSTOM)
             filteredStudents.forEach(s => {
                 let totalWeightedScore = 0;
                 let totalWeight = 0;
                 
+                // 1. Dari CBT
                 visibleExams.forEach(e => {
                     const sc = scores[s.id]?.[e.kodeUjian];
                     if(sc && sc.skor !== undefined) {
@@ -761,11 +1134,23 @@
                         totalWeight += weight;
                     }
                 });
-                // Calculate Weighted Average
+
+                // 2. Dari Kolom Kustom
+                customColumns.forEach(col => {
+                    const cScore = customScores[s.id] && customScores[s.id][col.id] !== undefined ? customScores[s.id][col.id] : null;
+                    if(cScore !== null && cScore !== "") {
+                        const weight = parseFloat(col.weight) || 1;
+                        totalWeightedScore += parseFloat(cScore) * weight;
+                        totalWeight += weight;
+                    }
+                });
+
                 s.avg = totalWeight > 0 ? (totalWeightedScore / totalWeight) : 0;
+                
+                // Ambil dari memori editan atau default ke rata-rata
+                s.finalGrade = editedFinalGrades[s.id] !== undefined ? editedFinalGrades[s.id] : Math.round(s.avg);
             });
 
-            // 4. Sort
             filteredStudents.sort((a, b) => {
                 if (sortMode === 'name_asc') return a.nama.localeCompare(b.nama);
                 if (sortMode === 'name_desc') return b.nama.localeCompare(a.nama);
@@ -787,12 +1172,13 @@
                 tr.className = "bg-card border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group";
                 
                 let rowHtml = `
-                    <td class="px-6 py-4 sticky left-0 bg-card group-hover:bg-gray-50 dark:group-hover:bg-gray-800 text-center font-mono opacity-50">${i + 1}</td>
-                    <td class="px-6 py-4 sticky left-10 bg-card group-hover:bg-gray-50 dark:group-hover:bg-gray-800 font-bold whitespace-nowrap text-gray-800 dark:text-white">${s.nama}<br><span class="text-[10px] font-normal opacity-50 text-gray-500">${s.id}</span></td>
+                    <td class="px-6 py-4 sticky left-0 bg-card group-hover:bg-gray-50 dark:group-hover:bg-gray-800 text-center font-mono opacity-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">${i + 1}</td>
+                    <td class="px-6 py-4 sticky left-10 bg-card group-hover:bg-gray-50 dark:group-hover:bg-gray-800 font-bold whitespace-nowrap text-gray-800 dark:text-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">${s.nama}<br><span class="text-[10px] font-normal opacity-50 text-gray-500">${s.id}</span></td>
                     <td class="px-6 py-4 text-center"><span class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-xs font-bold text-gray-600 dark:text-gray-300 whitespace-nowrap">${s.kelas}</span></td>
                 `;
 
-                if (visibleExams.length === 0) {
+                // Render Nilai CBT
+                if (visibleExams.length === 0 && customColumns.length === 0) {
                      rowHtml += `<td class="px-6 py-4 text-center text-gray-300">-</td>`;
                 } else {
                     visibleExams.forEach(e => {
@@ -802,13 +1188,11 @@
 
                         if (record) {
                             let correctionBtn = '';
-                            
                             if (e.hasManualCorrection) {
                                 const isGraded = record.manualScores && Object.keys(record.manualScores).length > 0;
                                 const btnColor = isGraded ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300 animate-pulse';
                                 correctionBtn = `<button onclick="window.openCorrection('${s.id}', '${e.kodeUjian}')" class="ml-2 text-[10px] ${btnColor} px-1 rounded hover:brightness-90" title="Koreksi Manual">✎</button>`;
                             } 
-
                             cellContent = Math.round(record.skor) + correctionBtn;
                             cellClass = "font-bold text-gray-800 dark:text-white";
                             if (record.skor < 70) cellClass = "font-bold text-red-500";
@@ -817,9 +1201,33 @@
                     });
                 }
 
-                const avgClass = s.avg >= 75 ? "text-primary" : "text-red-500";
+                // Render Input Nilai Kustom
+                customColumns.forEach(col => {
+                    const cVal = customScores[s.id] && customScores[s.id][col.id] !== undefined ? customScores[s.id][col.id] : '';
+                    rowHtml += `
+                    <td class="px-2 py-3 text-center border-l border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/30 dark:bg-indigo-900/5">
+                        <input type="number" data-nis="${s.id}" value="${cVal}" 
+                            onpaste="handleExcelPaste(event, this, '${col.id}')"
+                            oninput="handleManualInput(event, '${s.id}', '${col.id}')"
+                            class="paste-receiver paste-${col.id} w-14 p-1.5 text-center font-bold text-indigo-900 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-700 rounded bg-white dark:bg-cyber-800 focus:ring-2 ring-indigo-500 outline-none text-sm" placeholder="-">
+                    </td>`;
+                });
+
+                // Rata-rata & Nilai Akhir
+                const avgClass = s.avg >= 75 ? "text-gray-900 dark:text-white" : "text-red-500";
+                
+                // Indikator jika nilai akhir diedit manual (berbeda dari rata-rata)
+                const isEdited = editedFinalGrades[s.id] !== undefined && editedFinalGrades[s.id] !== Math.round(s.avg);
+                const finalBorder = isEdited ? 'border-blue-500 ring-1 ring-blue-500 bg-blue-100 dark:bg-blue-900/80' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-cyber-800';
+
                 rowHtml += `
-                    <td class="px-6 py-4 text-center border-l dark:border-gray-700 font-bold text-lg ${avgClass}">${s.avg.toFixed(1)}</td>
+                    <td class="px-4 py-4 text-center border-l dark:border-gray-600 font-bold text-lg ${avgClass} bg-gray-50 dark:bg-gray-800/80">${s.avg.toFixed(1)}</td>
+                    <td class="px-4 py-4 text-center border-l border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10">
+                        <input type="number" data-nis="${s.id}" value="${s.finalGrade}"
+                            onpaste="handleExcelPaste(event, this, 'nilai_akhir')"
+                            oninput="handleManualInput(event, '${s.id}', 'nilai_akhir')"
+                            class="paste-receiver paste-nilai_akhir w-16 p-2 text-center font-bold text-blue-900 dark:text-blue-100 border rounded-lg outline-none focus:ring-2 ring-blue-500 ${finalBorder}">
+                    </td>
                     <td class="px-6 py-4 text-center">
                         <button onclick="window.printReportCard('${s.id}')" class="text-blue-500 bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg hover:shadow-md transition-all" title="Cetak Rapor Personal">
                             <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
@@ -832,24 +1240,6 @@
             });
         }
 
-        async function deleteExamPermanently(docId, namaUjian, kodeUjian) {
-            if(!confirm(`HAPUS PERMANEN Ujian "${namaUjian}"?\nSemua nilai siswa akan hilang.`)) return;
-            const code = prompt(`Ketik "${kodeUjian}" untuk konfirmasi:`);
-            if (code !== kodeUjian) return alert("Kode salah.");
-
-            try {
-                await deleteDoc(doc(db, 'ujian_terjadwal', docId));
-                const q = query(collection(db, 'hasil_ujian'), where('ujianId', '==', kodeUjian));
-                const snap = await getDocs(q);
-                const promises = [];
-                snap.forEach(d => promises.push(deleteDoc(d.ref)));
-                await Promise.all(promises);
-                alert(`Ujian dihapus.`);
-                loadAllData(); 
-            } catch (e) { alert("Gagal: " + e.message); }
-        }
-
-        // PENTING: FUNGSI MEMBUKA KOREKSI
         async function openCorrection(nis, examCode) {
             const student = students.find(s => s.id === nis);
             const exam = exams.find(e => e.kodeUjian === examCode);
@@ -873,7 +1263,6 @@
                 
                 const questions = qSnaps.map((s, i) => {
                     const kData = kSnaps[i].exists() ? kSnaps[i].data() : { kunci: 'N/A' };
-                    // Ambil opsi dari bank_soal (public) untuk mapping label PG
                     const publicData = s.data();
                     return { id: s.id, ...publicData, kunciAsli: kData.kunci };
                 });
@@ -887,11 +1276,9 @@
                     questions.forEach((q, i) => answerMap[q.id] = record.jawabanSiswa[i]);
                 }
 
-                // MERGE AUTO-GRADED SCORES INTO MANUAL SCORES FIRST
                 const mergedManualScores = { ...record.manualScores };
                 
                 questions.forEach(q => {
-                    // Cek jika belum ada nilai manual, coba hitung otomatis
                     if (mergedManualScores[q.id] === undefined) {
                         const bobot = (exam.kustomisasiBobot && exam.kustomisasiBobot[q.id]) ? parseInt(exam.kustomisasiBobot[q.id]) : (parseInt(q.skor) || 1);
                         const ansObj = answerMap[q.id] || { val: '-', image: null };
@@ -913,7 +1300,6 @@
                             }
                         }
                         
-                        // Simpan nilai otomatis ke dalam objek mergedManualScores
                         mergedManualScores[q.id] = autoScore;
                     }
                 });
@@ -922,7 +1308,7 @@
                     docId: record.docId, 
                     questions: questions, 
                     answerMap: answerMap,
-                    manualScores: mergedManualScores, // Gunakan yang sudah digabung
+                    manualScores: mergedManualScores, 
                     examData: exam
                 };
 
@@ -939,7 +1325,6 @@
             container.innerHTML = '';
             const { questions, answerMap, manualScores, examData } = currentCorrectionData;
 
-            // FILTER: HANYA TAMPILKAN ESAI KOMPLEKS & ESAI SINGKAT
             const manualQuestions = questions.filter(q => q.type === 'esai-kompleks' || q.type === 'esai-singkat');
             
             if (manualQuestions.length === 0) {
@@ -961,7 +1346,6 @@
                 let ansDisplay = studentAns;
                 if(typeof studentAns === 'object' && studentAns !== null) ansDisplay = JSON.stringify(studentAns);
                 
-                // IMAGE HANDLING (DEEP ZOOM)
                 if(studentImg) {
                     const imgHtml = `
                         <div class="relative group mt-2 inline-block w-full">
@@ -977,7 +1361,6 @@
                     else ansDisplay = `<div>${studentAns}</div>${imgHtml}`;
                 }
 
-                // Kunci (Untuk Esai Singkat)
                 let keyDisplay = '';
                 if(q.type === 'esai-singkat') {
                     keyDisplay = `<div class="mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded border border-green-200 dark:border-green-800">
@@ -1015,7 +1398,6 @@
         async function saveCorrection() {
             if(!currentCorrectionData) return;
             
-            // 1. Ambil nilai Esai dari Input DOM
             const inputs = document.querySelectorAll('.manual-score-input');
             const finalScores = { ...currentCorrectionData.manualScores }; 
 
@@ -1028,7 +1410,6 @@
                 finalScores[qid] = val; 
             });
 
-            // 2. Hitung Total Skor
             let totalScore = 0;
             let maxScore = 0;
 
@@ -1050,7 +1431,7 @@
                     dikoreksiOleh: auth.currentUser?.uid || 'system',
                     dikoreksiPada: new Date().toISOString()
                 });
-                alert(`Tersimpan. Nilai Akhir Siswa: ${finalPercent}`);
+                alert(`Tersimpan. Nilai Akhir Ujian Ini: ${finalPercent}`);
                 closeCorrectionModal();
                 loadAllData(); 
             } catch(e) {
@@ -1063,10 +1444,27 @@
             currentCorrectionData = null;
         }
 
+        async function deleteExamPermanently(docId, namaUjian, kodeUjian) {
+            if(!confirm(`HAPUS PERMANEN Ujian "${namaUjian}"?\nSemua nilai siswa akan hilang.`)) return;
+            const code = prompt(`Ketik "${kodeUjian}" untuk konfirmasi:`);
+            if (code !== kodeUjian) return alert("Kode salah.");
+
+            try {
+                await deleteDoc(doc(db, 'ujian_terjadwal', docId));
+                const q = query(collection(db, 'hasil_ujian'), where('ujianId', '==', kodeUjian));
+                const snap = await getDocs(q);
+                const promises = [];
+                snap.forEach(d => promises.push(deleteDoc(d.ref)));
+                await Promise.all(promises);
+                alert(`Ujian dihapus.`);
+                loadAllData(); 
+            } catch (e) { alert("Gagal: " + e.message); }
+        }
+
         function exportToExcel() {
             const table = document.getElementById('grades-table');
             const wb = XLSX.utils.table_to_book(table, { sheet: "Nilai Siswa" });
-            XLSX.writeFile(wb, "Rekap_Nilai_Siswa.xlsx");
+            XLSX.writeFile(wb, `Rekap_Nilai_${currentGuruMapel}.xlsx`);
         }
 
         function printReportCard(nis) {
@@ -1077,11 +1475,11 @@
             document.getElementById('print-class').textContent = s.kelas;
             document.getElementById('print-nis').textContent = s.id;
             document.getElementById('print-date').textContent = new Date().toLocaleDateString('id-ID');
+            document.getElementById('print-teacher-name').textContent = currentGuruId || ".........................";
             
             const tbody = document.getElementById('print-body');
             tbody.innerHTML = '';
             
-            // 1. FILTER: HANYA UJIAN YANG TARGET KELASNYA SESUAI DENGAN SISWA
             const studentExams = exams.filter(e => {
                 if (e.targetSemuaKelas) return true;
                 return e.targetKelas && e.targetKelas.includes(s.kelas);
@@ -1089,42 +1487,61 @@
 
             let totalWeightedScore = 0;
             let totalWeight = 0;
+            let displayedCount = 0;
 
-            if (studentExams.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="border border-black p-2 text-center italic">Tidak ada data ujian untuk kelas ini.</td></tr>';
-                document.getElementById('print-avg').textContent = '0.00';
-            } else {
-                let displayedCount = 0;
-                studentExams.forEach((e) => {
-                    const record = scores[s.id]?.[e.kodeUjian];
-                    // Jika belum dikerjakan, tampilkan nilai 0 (bisa diganti '-' jika ingin)
-                    const val = record ? Math.round(record.skor) : 0;
-                    const bobot = parseFloat(e.bobotNilai) || 1;
-                    
-                    // Hitung Rata-rata hanya dari yang SUDAH dikerjakan (memiliki record)
-                    // Ini agar rata-rata tidak jatuh karena ujian yang belum dikerjakan
-                    if (record && record.skor !== undefined) {
-                        totalWeightedScore += parseFloat(record.skor) * bobot;
-                        totalWeight += bobot;
-                    }
-
-                    let predikat = "D";
-                    if(val >= 90) predikat = "A";
-                    else if(val >= 80) predikat = "B";
-                    else if(val >= 70) predikat = "C";
-
-                    tbody.innerHTML += `<tr>
-                        <td class="border border-black p-2 text-center">${++displayedCount}</td>
-                        <td class="border border-black p-2">${e.namaUjian}</td>
-                        <td class="border border-black p-2 text-center">${bobot}</td>
-                        <td class="border border-black p-2 text-center font-bold">${val}</td>
-                        <td class="border border-black p-2 text-center">${predikat}</td>
-                    </tr>`;
-                });
+            // 1. Masukkan Nilai CBT
+            studentExams.forEach((e) => {
+                const record = scores[s.id]?.[e.kodeUjian];
+                const val = record ? Math.round(record.skor) : 0;
+                const bobot = parseFloat(e.bobotNilai) || 1;
                 
-                // Hitung rata-rata akhir
+                if (record && record.skor !== undefined) {
+                    totalWeightedScore += parseFloat(record.skor) * bobot;
+                    totalWeight += bobot;
+                }
+
+                let predikat = "D";
+                if(val >= 90) predikat = "A"; else if(val >= 80) predikat = "B"; else if(val >= 70) predikat = "C";
+
+                tbody.innerHTML += `<tr>
+                    <td class="border border-black p-2 text-center">${++displayedCount}</td>
+                    <td class="border border-black p-2">[CBT] ${e.namaUjian}</td>
+                    <td class="border border-black p-2 text-center">${bobot}</td>
+                    <td class="border border-black p-2 text-center font-bold">${val}</td>
+                    <td class="border border-black p-2 text-center">${predikat}</td>
+                </tr>`;
+            });
+
+            // 2. Masukkan Nilai Kustom (Tugas, dll)
+            customColumns.forEach((col) => {
+                const cScore = customScores[s.id] && customScores[s.id][col.id] !== undefined ? parseFloat(customScores[s.id][col.id]) : 0;
+                const bobot = parseFloat(col.weight) || 1;
+                
+                totalWeightedScore += cScore * bobot;
+                totalWeight += bobot;
+
+                let predikat = "D";
+                if(cScore >= 90) predikat = "A"; else if(cScore >= 80) predikat = "B"; else if(cScore >= 70) predikat = "C";
+
+                tbody.innerHTML += `<tr>
+                    <td class="border border-black p-2 text-center">${++displayedCount}</td>
+                    <td class="border border-black p-2 text-indigo-800">[Manual] ${col.name}</td>
+                    <td class="border border-black p-2 text-center">${bobot}</td>
+                    <td class="border border-black p-2 text-center font-bold">${cScore}</td>
+                    <td class="border border-black p-2 text-center">${predikat}</td>
+                </tr>`;
+            });
+
+            if (displayedCount === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="border border-black p-2 text-center italic">Tidak ada data ujian/tugas untuk siswa ini.</td></tr>';
+                document.getElementById('print-avg').textContent = '0.00';
+                document.getElementById('print-final').textContent = '0';
+            } else {
                 const finalAvg = totalWeight > 0 ? (totalWeightedScore / totalWeight) : 0;
                 document.getElementById('print-avg').textContent = finalAvg.toFixed(2);
+                
+                const finalGrade = editedFinalGrades[s.id] !== undefined ? editedFinalGrades[s.id] : Math.round(finalAvg);
+                document.getElementById('print-final').textContent = finalGrade;
             }
 
             setTimeout(() => window.print(), 500);
