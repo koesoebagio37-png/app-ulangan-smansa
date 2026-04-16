@@ -99,7 +99,7 @@
                     </label>
                     
                     <div class="flex gap-2 mb-4">
-                        <input type="text" id="add-mapel-input" class="flex-1 p-2.5 rounded-xl border border-gray-200 dark:border-emerald-800 bg-white dark:bg-cyber-900 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ketik nama mapel...">
+                        <input type="text" id="add-mapel-input" oninput="this.value = this.value.toUpperCase()" class="flex-1 p-2.5 rounded-xl border border-gray-200 dark:border-emerald-800 bg-white dark:bg-cyber-900 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ketik nama mapel...">
                         <button onclick="addMasterItem('mapel')" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-xl font-bold text-sm transition-colors">+</button>
                     </div>
 
@@ -116,7 +116,7 @@
                     </label>
                     
                     <div class="flex gap-2 mb-4">
-                        <input type="text" id="add-kelas-input" class="flex-1 p-2.5 rounded-xl border border-gray-200 dark:border-emerald-800 bg-white dark:bg-cyber-900 text-sm focus:ring-2 focus:ring-green-500 outline-none" placeholder="Cth: X-1, XII-IPA-1...">
+                        <input type="text" id="add-kelas-input" oninput="this.value = this.value.toUpperCase()" class="flex-1 p-2.5 rounded-xl border border-gray-200 dark:border-emerald-800 bg-white dark:bg-cyber-900 text-sm focus:ring-2 focus:ring-green-500 outline-none" placeholder="Cth: X-1, XII-IPA-1...">
                         <button onclick="addMasterItem('kelas')" class="bg-green-100 hover:bg-green-200 text-green-700 px-4 py-2 rounded-xl font-bold text-sm transition-colors">+</button>
                     </div>
 
@@ -393,9 +393,9 @@
         }
 
         window.addMasterItem = (type) => {
-            const input = document.getElementById(`add-${type}-input`);
-            const val = input.value.trim();
-            if(!val) return;
+			const input = document.getElementById(`add-${type}-input`);
+			const val = input.value.trim().toUpperCase();
+			if(!val) return;
             
             if(type === 'mapel' && !masterMapel.includes(val)) masterMapel.push(val);
             if(type === 'kelas' && !masterKelas.includes(val)) masterKelas.push(val);
@@ -587,8 +587,8 @@
                         batch.set(doc(db, 'users_guru', id), {
                             fullName: row[1]||'Guru',
                             pin: row[0].toString(),
-                            mapel: (row[2]||'').split(',').map(s=>s.trim()).filter(Boolean),
-                            kelas: (row[3]||'').split(',').map(s=>s.trim()).filter(Boolean),
+                            mapel: (row[2]||'').split(',').map(s=>s.trim().toUpperCase()).filter(Boolean),
+							kelas: (row[3]||'').split(',').map(s=>s.trim().toUpperCase()).filter(Boolean),
                             waliKelas: wk !== '' ? wk : null, // Simpan jika ada
                             updatedAt: new Date().toISOString()
                         });
