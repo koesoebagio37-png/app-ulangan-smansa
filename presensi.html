@@ -65,7 +65,7 @@
             <!-- Fallback Login Manual (Hanya muncul jika tidak ada sesi Portal) -->
             <div id="login-fallback" class="hidden mt-4 space-y-4">
                 <p class="text-red-500 font-bold text-sm bg-red-50 dark:bg-red-900/20 p-2 rounded">Akses Ditolak: Tidak ada sesi aktif.</p>
-                <button onclick="window.location.href='Portal Akademik.html'" class="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded-lg transition-all shadow-lg">Buka Portal Akademik</button>
+                <button onclick="window.location.href='Portal Akademik Sekolah.html'" class="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded-lg transition-all shadow-lg">Buka Portal Akademik</button>
             </div>
         </div>
     </div>
@@ -161,7 +161,7 @@
         </div>
     </div>
 
-    <!-- Report Panel (Modal) -->
+    <!-- Report Panel (Modal) DENGAN RENTANG TANGGAL -->
     <div id="report-panel" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto">
         <div class="min-h-screen flex items-center justify-center p-4">
             <div class="bg-white dark:bg-cyber-800 w-full max-w-6xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col max-h-[90vh]">
@@ -177,18 +177,22 @@
                 
                 <div class="p-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-cyber-800">
                     <div class="flex flex-col md:flex-row gap-4 items-end">
-                        <div class="flex-1 grid grid-cols-2 gap-4 w-full">
+                        <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
                             <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Pilih Bulan Arsip</label>
-                                <input type="month" id="report-month" class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-cyber-900 dark:border-gray-600 dark:text-white focus:ring-indigo-500">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Mulai Tanggal</label>
+                                <input type="date" id="report-start-date" class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-cyber-900 dark:border-gray-600 dark:text-white focus:ring-indigo-500">
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Kelas</label>
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Sampai Tanggal</label>
+                                <input type="date" id="report-end-date" class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-cyber-900 dark:border-gray-600 dark:text-white focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Kelas</label>
                                 <input type="text" id="report-class-display" class="w-full p-2.5 border rounded-lg bg-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 cursor-not-allowed font-bold" readonly value="-">
                             </div>
                         </div>
                         
-                        <button onclick="window.generateMonthlyReport()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-6 rounded-lg shadow transition-colors flex items-center gap-2">
+                        <button onclick="window.generateCustomReport()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-6 rounded-lg shadow transition-colors flex items-center gap-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                             Lihat Data
                         </button>
@@ -200,7 +204,7 @@
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg> 
                                 Download CSV
                             </button>
-                            <button onclick="window.resetMonthlyData()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 px-4 rounded-lg shadow transition-colors flex items-center gap-2" title="Kosongkan Data Bulan Ini (Soft Reset)">
+                            <button onclick="window.resetRangeData()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 px-4 rounded-lg shadow transition-colors flex items-center gap-2" title="Kosongkan Data Rentang Waktu Ini">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 Hapus
                             </button>
@@ -215,7 +219,7 @@
                                 <tr id="report-header-row"></tr>
                             </thead>
                             <tbody id="report-body" class="divide-y divide-gray-200 dark:divide-gray-700">
-                                <tr><td class="p-12 text-center text-gray-400 italic">Silakan pilih bulan dan klik tombol "Lihat Data" untuk menampilkan arsip mapel ini.</td></tr>
+                                <tr><td class="p-12 text-center text-gray-400 italic">Silakan pilih rentang tanggal dan klik "Lihat Data" untuk menampilkan arsip mapel ini.</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -486,9 +490,16 @@
             const day = String(today.getDate()).padStart(2, '0');
             const localDateString = `${year}-${month}-${day}`;
             
+            const startOfMonth = new Date(year, today.getMonth(), 1);
+            const startYear = startOfMonth.getFullYear();
+            const startMonth = String(startOfMonth.getMonth() + 1).padStart(2, '0');
+            const startDay = String(startOfMonth.getDate()).padStart(2, '0');
+
             const datePicker = document.getElementById('date-picker');
             datePicker.value = localDateString;
-            document.getElementById('report-month').value = `${year}-${month}`;
+            
+            document.getElementById('report-start-date').value = `${startYear}-${startMonth}-${startDay}`;
+            document.getElementById('report-end-date').value = localDateString;
             document.getElementById('agenda-history-month').value = `${year}-${month}`; 
 
             document.getElementById('class-selector').addEventListener('change', initAttendanceSession);
@@ -955,54 +966,75 @@
         window.toggleQrFullscreen = () => document.getElementById('qr-fullscreen').classList.toggle('active');
         window.toggleReportPanel = () => document.getElementById('report-panel').classList.toggle('hidden');
 
-        window.generateMonthlyReport = async () => {
-            const monthVal = document.getElementById('report-month').value; 
+        window.generateCustomReport = async () => {
+            const startVal = document.getElementById('report-start-date').value; 
+            const endVal = document.getElementById('report-end-date').value; 
             const kelas = currentClass;
             const tbody = document.getElementById('report-body');
             const theadRow = document.getElementById('report-header-row');
 
-            if(!kelas || !monthVal) { alert("Pilih Kelas dan Bulan terlebih dahulu!"); return; }
-            tbody.innerHTML = '<tr><td class="p-8 text-center">Memuat data...</td></tr>';
-
-            const [year, month] = monthVal.split('-');
-            const daysInMonth = new Date(year, month, 0).getDate();
+            if(!kelas || !startVal || !endVal) { alert("Pilih Kelas dan Rentang Tanggal terlebih dahulu!"); return; }
             
-            let headerHtml = '<th class="p-2 border">No</th><th class="p-2 border">Nama Siswa</th>';
-            for(let d=1; d<=daysInMonth; d++) headerHtml += `<th class="p-2 border text-center w-8">${d}</th>`;
-            headerHtml += '<th class="p-2 border text-center">H</th><th class="p-2 border text-center">S</th><th class="p-2 border text-center">I</th><th class="p-2 border text-center">A</th>';
+            const startDate = new Date(startVal + 'T00:00:00');
+            const endDate = new Date(endVal + 'T00:00:00');
+            if(startDate > endDate) { alert("Tanggal mulai tidak boleh melebihi tanggal akhir!"); return; }
+
+            const datesToFetch = [];
+            let currDate = new Date(startDate);
+            while(currDate <= endDate) {
+                const y = currDate.getFullYear();
+                const m = String(currDate.getMonth() + 1).padStart(2, '0');
+                const d = String(currDate.getDate()).padStart(2, '0');
+                datesToFetch.push(`${y}-${m}-${d}`);
+                currDate.setDate(currDate.getDate() + 1);
+            }
+
+            if(datesToFetch.length > 100) {
+                if(!confirm(`Anda akan memuat data untuk ${datesToFetch.length} hari. Proses ini mungkin memakan waktu agak lama. Lanjutkan?`)) return;
+            }
+
+            tbody.innerHTML = '<tr><td class="p-8 text-center" colspan="100%">Memuat data rentang waktu...</td></tr>';
+
+            let headerHtml = '<th class="p-2 border">No</th><th class="p-2 border min-w-[150px]">Nama Siswa</th>';
+            datesToFetch.forEach(d => {
+                const [y, m, day] = d.split('-');
+                headerHtml += `<th class="p-2 border text-center text-[10px] min-w-[40px] w-10">${day}/${m}</th>`;
+            });
+            headerHtml += '<th class="p-2 border text-center bg-gray-200 dark:bg-gray-600">H</th><th class="p-2 border text-center bg-gray-200 dark:bg-gray-600">S</th><th class="p-2 border text-center bg-gray-200 dark:bg-gray-600">I</th><th class="p-2 border text-center bg-gray-200 dark:bg-gray-600">A</th>';
             theadRow.innerHTML = headerHtml;
 
             const promises = [];
-            for(let d=1; d<=daysInMonth; d++) {
-                const dateStr = `${monthVal}-${String(d).padStart(2, '0')}`;
+            datesToFetch.forEach(dateStr => {
                 const docId = `${kelas}_${currentGuruMapel}_${dateStr}`;
                 promises.push(getDoc(doc(db, 'presensi', docId)).then(async snap => {
                     let data = snap.exists() ? snap.data() : {};
-                    // Cek legacy jika kosong
                     if(!snap.exists()) {
                         try {
                            const legSnap = await getDoc(doc(db, 'presensi', `${kelas}_${dateStr}`));
                            if(legSnap.exists()) data = legSnap.data();
                         } catch(e) {}
                     }
-                    return { date: d, data };
+                    return { date: dateStr, data };
                 }));
-            }
+            });
             
             const results = await Promise.all(promises);
-            const monthlyData = {};
-            results.forEach(r => monthlyData[r.date] = r.data);
+            const reportDataMap = {};
+            results.forEach(r => reportDataMap[r.date] = r.data);
 
             tbody.innerHTML = '';
             currentReportData = [];
 
             studentsInClass.forEach((s, idx) => {
-                let rowHtml = `<tr><td class="p-2 border text-center font-mono text-gray-500">${idx + 1}</td><td class="p-2 border font-medium text-gray-800 dark:text-white">${s.nama}</td>`;
+                let rowHtml = `<tr>
+                    <td class="p-2 border text-center font-mono text-gray-500">${idx + 1}</td>
+                    <td class="p-2 border font-medium text-gray-800 dark:text-white whitespace-nowrap">${s.nama}</td>`;
+                
                 let stats = { h:0, s:0, i:0, a:0 };
                 let exportRow = { nama: s.nama };
 
-                for(let d=1; d<=daysInMonth; d++) {
-                    const dayData = monthlyData[d];
+                datesToFetch.forEach(dateStr => {
+                    const dayData = reportDataMap[dateStr];
                     const record = dayData[s.id];
                     let cellContent = '';
                     let cellClass = '';
@@ -1017,9 +1049,12 @@
                         else if(st === 'a') cellClass = 'bg-red-100 text-red-700 dark:bg-red-900/50';
                     }
                     rowHtml += `<td class="p-2 border text-center text-xs font-bold ${cellClass}">${cellContent}</td>`;
-                    exportRow[`d${d}`] = cellContent || '-';
-                }
-                rowHtml += `<td class="p-2 border text-center font-bold bg-gray-50 dark:bg-gray-800">${stats.h}</td><td class="p-2 border text-center font-bold bg-gray-50 dark:bg-gray-800">${stats.s}</td><td class="p-2 border text-center font-bold bg-gray-50 dark:bg-gray-800">${stats.i}</td><td class="p-2 border text-center font-bold bg-gray-50 dark:bg-gray-800">${stats.a}</td></tr>`;
+                    exportRow[dateStr] = cellContent || '-';
+                });
+                rowHtml += `<td class="p-2 border text-center font-bold bg-gray-50 dark:bg-gray-800 text-green-600">${stats.h}</td>
+                            <td class="p-2 border text-center font-bold bg-gray-50 dark:bg-gray-800 text-blue-600">${stats.s}</td>
+                            <td class="p-2 border text-center font-bold bg-gray-50 dark:bg-gray-800 text-yellow-600">${stats.i}</td>
+                            <td class="p-2 border text-center font-bold bg-gray-50 dark:bg-gray-800 text-red-600">${stats.a}</td></tr>`;
                 tbody.innerHTML += rowHtml;
                 currentReportData.push({ ...exportRow, ...stats });
             });
@@ -1027,36 +1062,58 @@
 
         window.exportReportCSV = () => {
             if(!currentReportData || currentReportData.length === 0) { alert("Tampilkan data laporan terlebih dahulu!"); return; }
-            const monthVal = document.getElementById('report-month').value;
+            const startVal = document.getElementById('report-start-date').value;
+            const endVal = document.getElementById('report-end-date').value;
+            
+            const dates = Object.keys(currentReportData[0]).filter(k => k.match(/^\d{4}-\d{2}-\d{2}$/)).sort();
+            
             let csv = "Nama,";
-            const days = Object.keys(currentReportData[0]).filter(k => k.startsWith('d')).length;
-            for(let i=1; i<=days; i++) csv += `${i},`;
+            dates.forEach(d => csv += `${d},`);
             csv += "H,S,I,A\n";
+            
             currentReportData.forEach(row => {
                 csv += `"${row.nama}",`;
-                for(let i=1; i<=days; i++) csv += `${row['d'+i]},`;
+                dates.forEach(d => csv += `${row[d]},`);
                 csv += `${row.h},${row.s},${row.i},${row.a}\n`;
             });
+            
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = `Presensi_${currentGuruMapel}_${currentClass}_${monthVal}.csv`; a.click();
+            const a = document.createElement('a'); a.href = url; 
+            a.download = `Presensi_${currentGuruMapel}_${currentClass}_${startVal}_to_${endVal}.csv`; 
+            a.click();
         };
 
-        window.resetMonthlyData = async () => {
-            const monthVal = document.getElementById('report-month').value;
+        window.resetRangeData = async () => {
+            const startVal = document.getElementById('report-start-date').value;
+            const endVal = document.getElementById('report-end-date').value;
             const kelas = currentClass;
-            if(!kelas || !monthVal) return;
-            if(!confirm(`PERINGATAN: Hapus permanen data presensi kelas ${kelas} bulan ${monthVal} untuk mapel ${currentGuruMapel}?`)) return;
+            
+            if(!kelas || !startVal || !endVal) return;
+            if(!confirm(`PERINGATAN BAHAYA:\n\nApakah Anda yakin ingin MENGHAPUS PERMANEN seluruh data presensi kelas ${kelas} untuk mapel ${currentGuruMapel} dari tanggal ${startVal} sampai ${endVal}?\n\nData yang dihapus tidak bisa dikembalikan!`)) return;
 
-            const [year, month] = monthVal.split('-');
-            const daysInMonth = new Date(year, month, 0).getDate();
+            const startDate = new Date(startVal + 'T00:00:00');
+            const endDate = new Date(endVal + 'T00:00:00');
+            
             const batchPromises = [];
-            for(let d=1; d<=daysInMonth; d++) {
-                const dateStr = `${monthVal}-${String(d).padStart(2, '0')}`;
+            let currDate = new Date(startDate);
+            
+            while(currDate <= endDate) {
+                const y = currDate.getFullYear();
+                const m = String(currDate.getMonth() + 1).padStart(2, '0');
+                const d = String(currDate.getDate()).padStart(2, '0');
+                const dateStr = `${y}-${m}-${d}`;
+                
                 const docRef = doc(db, 'presensi', `${kelas}_${currentGuruMapel}_${dateStr}`);
-                batchPromises.push(setDoc(docRef, { mapel: currentGuruMapel }));
+                batchPromises.push(setDoc(docRef, { mapel: currentGuruMapel })); 
+                currDate.setDate(currDate.getDate() + 1);
             }
-            try { await Promise.all(batchPromises); alert("Data dikosongkan."); window.generateMonthlyReport(); } 
+            
+            try { 
+                await Promise.all(batchPromises); 
+                alert("Data pada rentang waktu tersebut berhasil dikosongkan."); 
+                window.generateCustomReport(); 
+            } 
             catch(e) { alert("Gagal menghapus: " + e.message); }
         };
 
