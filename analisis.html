@@ -184,7 +184,10 @@
             <div class="bg-white dark:bg-cyber-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div class="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-cyber-900/50 flex justify-between items-center">
                     <h3 class="text-lg font-bold">Analisis Butir Soal</h3>
-                    <button onclick="alert('Fitur Download CSV akan segera tersedia.')" class="text-sm text-purple-600 font-bold hover:underline">Download CSV</button>
+                    <button onclick="window.exportItemAnalysisCSV()" class="text-sm text-purple-600 font-bold hover:underline flex items-center gap-1">
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg> 
+						Download CSV
+					</button>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left">
@@ -208,12 +211,23 @@
             <div class="bg-white dark:bg-cyber-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div class="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-cyber-900/50 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div>
-                        <h3 class="text-lg font-bold text-gray-800 dark:text-white">Analisis Hasil Siswa & Ketuntasan</h3>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">KKM: <span class="font-bold text-gray-700 dark:text-gray-300">75</span></p>
+                        <div class="flex items-center gap-3">
+                            <h3 class="text-lg font-bold text-gray-800 dark:text-white">Analisis Hasil Siswa & Ketuntasan</h3>
+                            <button onclick="window.exportStudentAnalysisCSV()" class="text-xs text-purple-600 font-bold hover:underline bg-purple-50 dark:bg-purple-900/30 px-3 py-1.5 rounded-lg border border-purple-200 dark:border-purple-800 flex items-center gap-1 shadow-sm">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                Download CSV
+                            </button>
+                        </div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">KKM: <span class="font-bold text-gray-700 dark:text-gray-300">75</span></p>
                     </div>
                     <!-- Mastery Stats -->
-                    <div class="flex gap-4">
-                        <div class="flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800">
+                    <div class="flex flex-wrap gap-4 items-center">
+                        <select id="sort-siswa" onchange="window.renderStudentTable()" class="p-2 text-xs font-bold bg-white dark:bg-cyber-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-purple-500 dark:text-white outline-none cursor-pointer">
+                            <option value="nilai">Urutkan: Peringkat (Nilai)</option>
+                            <option value="nama">Urutkan: Nama (A-Z)</option>
+                        </select>
+                        <div class="flex gap-4">
+                            <div class="flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800">
                             <div class="w-3 h-3 rounded-full bg-green-500"></div>
                             <span class="text-xs font-bold text-green-700 dark:text-green-400">Tuntas: <span id="count-tuntas">0</span></span>
                         </div>
@@ -269,6 +283,7 @@
         let currentGuruId = null;
         let currentGuruMapel = null;
         let allExamsCache = []; // NEW: Cache untuk menyimpan data ujian
+        let currentAnalysisStudents = []; // Variabel untuk menyimpan data siswa yang sedang dianalisis
 
         document.addEventListener('DOMContentLoaded', async () => {
             const app = initializeApp(firebaseConfig);
@@ -495,6 +510,7 @@
                 
                 const students = [];
                 resSnap.forEach(d => students.push(d.data()));
+                currentAnalysisStudents = students; // Simpan ke variabel global
 
                 if(students.length === 0) {
                     alert("Belum ada siswa yang mengerjakan ujian ini.");
@@ -568,7 +584,7 @@
 
                 renderDifficultyChart([easy, medium, hard]);
                 renderItemAnalysisTable(itemDetails);
-                renderStudentTable(students);
+                window.renderStudentTable();
 
             } catch(e) {
                 alert("Error Analisis: " + e.message);
@@ -644,13 +660,24 @@
             });
         }
 
-        function renderStudentTable(students) {
+        window.renderStudentTable = () => {
             const tbody = document.getElementById('table-siswa-body');
+            const sortMode = document.getElementById('sort-siswa').value;
             tbody.innerHTML = '';
             let tuntas=0, remedial=0;
             
-            const sorted = [...students].sort((a,b) => b.skor - a.skor);
-            sorted.forEach((s, idx) => {
+            // 1. Selalu hitung peringkat asli berdasarkan nilai
+            const rankedStudents = [...currentAnalysisStudents]
+                .sort((a,b) => b.skor - a.skor)
+                .map((s, index) => ({ ...s, peringkat: index + 1 }));
+            
+            // 2. Tentukan urutan akhir berdasarkan dropdown yang dipilih
+            let finalStudents = rankedStudents;
+            if (sortMode === 'nama') {
+                finalStudents = [...rankedStudents].sort((a,b) => a.nama.localeCompare(b.nama));
+            }
+
+            finalStudents.forEach((s) => {
                 const isTuntas = s.skor >= KKM;
                 if(isTuntas) tuntas++; else remedial++;
                 const status = isTuntas 
@@ -659,7 +686,7 @@
 
                 tbody.innerHTML += `
                     <tr class="hover:bg-gray-50 border-b dark:border-gray-800 dark:hover:bg-gray-700">
-                        <td class="px-6 py-3 font-bold">${idx+1}</td>
+                        <td class="px-6 py-3 font-bold">${s.peringkat}</td>
                         <td class="px-6 py-3">${s.nama}</td>
                         <td class="px-6 py-3 text-gray-500">${s.kelas}</td>
                         <td class="px-6 py-3 text-center">${status}</td>
@@ -669,8 +696,57 @@
             });
             document.getElementById('count-tuntas').textContent = tuntas;
             document.getElementById('count-remedial').textContent = remedial;
-        }
+        };
+		window.exportItemAnalysisCSV = () => {
+            const tbody = document.getElementById('table-soal-body');
+            const rows = tbody.querySelectorAll('tr');
+            if(rows.length === 0 || (rows.length === 1 && rows[0].innerText.includes('hanya tersedia'))) {
+                alert("Tidak ada data analisis butir soal untuk diekspor."); return;
+            }
+            
+            let csv = "No. Soal,Benar,Salah,Tingkat Kesukaran (P),Kategori\n";
+            rows.forEach(tr => {
+                const cols = tr.querySelectorAll('td');
+                if(cols.length >= 5) {
+                    csv += `${cols[0].innerText},${cols[1].innerText},${cols[2].innerText},${cols[3].innerText},${cols[4].innerText}\n`;
+                }
+            });
+            
+            const titleRaw = document.getElementById('report-title').innerText.replace('Laporan: ', '');
+            const title = titleRaw.replace(/[^a-zA-Z0-9]/g, '_');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url;
+            a.download = `Analisis_Butir_${title}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        };
 
+        window.exportStudentAnalysisCSV = () => {
+            const tbody = document.getElementById('table-siswa-body');
+            const rows = tbody.querySelectorAll('tr');
+            if(rows.length === 0) {
+                alert("Tidak ada data siswa untuk diekspor."); return;
+            }
+            
+            let csv = "Peringkat,Nama Siswa,Kelas,Status,Nilai Akhir\n";
+            rows.forEach(tr => {
+                const cols = tr.querySelectorAll('td');
+                if(cols.length >= 5) {
+                    // Kolom ke-2 (Nama) dibungkus tanda kutip ganda agar jika ada koma di namanya tidak merusak tabel
+                    csv += `${cols[0].innerText},"${cols[1].innerText}",${cols[2].innerText},${cols[3].innerText},${cols[4].innerText}\n`;
+                }
+            });
+            
+            const titleRaw = document.getElementById('report-title').innerText.replace('Laporan: ', '');
+            const title = titleRaw.replace(/[^a-zA-Z0-9]/g, '_');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url;
+            a.download = `Nilai_Siswa_${title}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        };
     </script>
 </body>
 </html>
